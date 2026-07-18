@@ -132,6 +132,16 @@ input[type=range]{min-height:26px;touch-action:pan-y}
   td input[type=number]{width:64px}
   .legend{gap:10px;font-size:10.5px}
 }
+/* rotate hint — phones held in portrait only */
+@media (max-width: 940px) and (orientation: portrait){
+  body::before{
+    content:"📱 Rotate your phone — charts & tables read best in landscape";
+    display:block; position:sticky; top:0; z-index:99;
+    background:var(--ink); color:#fff;
+    font-family:var(--mono); font-size:12px; text-align:center;
+    padding:7px 10px; letter-spacing:.3px;
+  }
+}
 </style>
 </head>
 <body>
