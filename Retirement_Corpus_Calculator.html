@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Life Expense Pyramid — Retirement Corpus Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF0EC; --card:#F7F9F6; --ink:#1F2A24; --ink-soft:#4A5A50;
+  --line:#C9D2C9; --brass:#9C7A3C; --green:#1E6B4F; --green-soft:#DCEBe2;
+  --red:#B3402A; --red-soft:#F3DFD9; --blue:#2C4A6E;
+  --gold:#C9932F; --pinkb:#B07A93;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  --slab:'Zilla Slab',Georgia,serif; --body:'Inter',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5}
+.wrap{max-width:1240px;margin:0 auto;padding:24px 20px 60px}
+header{border-bottom:3px double var(--ink);padding-bottom:14px;margin-bottom:20px}
+header h1{font-family:var(--slab);font-weight:700;font-size:30px;letter-spacing:.3px}
+header p{color:var(--ink-soft);max-width:900px;margin-top:4px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--brass)}
+
+/* verdict strip */
+.verdict{display:grid;grid-template-columns:repeat(4,1fr) 190px;gap:12px;margin:18px 0 22px}
+.vcard{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--brass);padding:12px 14px}
+.vcard .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-soft)}
+.vcard .num{font-family:var(--mono);font-size:24px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums}
+.vcard .sub{font-size:11.5px;color:var(--ink-soft);margin-top:2px}
+.stamp{display:flex;align-items:center;justify-content:center}
+.stamp .inner{transform:rotate(-6deg);border:3px solid;border-radius:6px;padding:10px 18px;font-family:var(--slab);font-weight:700;font-size:22px;letter-spacing:2px;text-transform:uppercase;text-align:center;line-height:1.15}
+.stamp.ok .inner{color:var(--green);border-color:var(--green);background:var(--green-soft)}
+.stamp.bad .inner{color:var(--red);border-color:var(--red);background:var(--red-soft)}
+
+.grid{display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start}
+@media(max-width:980px){.grid{grid-template-columns:1fr}.verdict{grid-template-columns:1fr 1fr}}
+
+.panel{background:var(--card);border:1px solid var(--line);padding:16px}
+.panel h2{font-family:var(--slab);font-size:18px;font-weight:600;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:12px}
+.lever{margin-bottom:13px}
+.lever label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-soft);margin-bottom:3px}
+.lever label b{font-family:var(--mono);color:var(--ink);font-weight:600}
+.lever input[type=range]{width:100%;accent-color:var(--green)}
+.lever input[type=number], select{width:100%;padding:5px 8px;border:1px solid var(--line);background:#fff;font-family:var(--mono);font-size:13px;color:var(--ink)}
+.toggle{display:flex;gap:0;border:1px solid var(--line);width:100%}
+.toggle button{flex:1;padding:6px;border:0;background:#fff;font-family:var(--mono);font-size:12px;cursor:pointer;color:var(--ink-soft)}
+.toggle button.on{background:var(--ink);color:#fff}
+
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tscroll table{min-width:640px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);text-align:left;padding:6px 6px;border-bottom:2px solid var(--ink)}
+td{padding:4px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+td input[type=number]{width:62px;padding:4px 5px;border:1px solid var(--line);background:#fff;font-family:var(--mono);font-size:12.5px;text-align:right}
+td input[type=text]{width:100%;min-width:150px;padding:4px 6px;border:1px solid transparent;background:transparent;font-family:var(--body);font-size:12.5px}
+td input[type=text]:hover,td input[type=text]:focus{border-color:var(--line);background:#fff}
+.spanline{font-family:var(--mono);font-size:9.5px;color:var(--ink-soft);padding:1px 6px 0;letter-spacing:.2px}
+td input[type=range].mini{width:84px;vertical-align:middle;accent-color:var(--green);margin:0}
+.rmini{width:96px !important;flex:0 0 auto;accent-color:var(--brass)}
+.brow{display:flex;gap:10px;align-items:center}
+.brow .grow{flex:1}
+.yl{font-family:var(--mono);font-size:11px;color:var(--ink);white-space:nowrap;padding-left:4px}
+td input:focus{outline:2px solid var(--brass);outline-offset:-1px}
+.lots{font-family:var(--mono);letter-spacing:-1px;color:var(--brass);white-space:nowrap}
+.del{border:0;background:none;color:var(--red);cursor:pointer;font-size:12px;font-family:var(--mono);padding:2px 6px;white-space:nowrap}
+.del:hover{text-decoration:underline}
+tr.inactive td{opacity:.42}
+tr.inactive td:last-child{opacity:1}
+tr.inactive input{background:#E7EAE5 !important;color:var(--ink-soft)}
+.restore{border:1px solid var(--green);background:var(--green-soft);color:var(--green);cursor:pointer;font-size:11.5px;font-family:var(--mono);padding:3px 8px;white-space:nowrap}
+.restore:hover{background:var(--green);color:#fff}
+.kill{border:1px solid var(--red);background:var(--red-soft);color:var(--red);cursor:pointer;font-size:11.5px;font-family:var(--mono);padding:3px 8px;white-space:nowrap;margin-left:4px}
+.kill:hover{background:var(--red);color:#fff}
+.addrow{margin-top:8px;border:1px dashed var(--line);background:none;padding:6px 12px;font-family:var(--mono);font-size:12px;cursor:pointer;color:var(--ink-soft)}
+.addrow:hover{border-color:var(--brass);color:var(--brass)}
+.alloc-note{font-family:var(--mono);font-size:12px;margin-top:8px;padding:7px 10px;border-left:3px solid var(--green);background:var(--green-soft)}
+.alloc-note.bad{border-color:var(--red);background:var(--red-soft)}
+
+.chartbox{background:var(--card);border:1px solid var(--line);padding:16px;margin-top:20px}
+.chartbox h2{font-family:var(--slab);font-size:18px;font-weight:600;margin-bottom:4px}
+.chartbox .cap{font-size:12px;color:var(--ink-soft);margin-bottom:10px}
+svg text{font-family:var(--mono)}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-soft);margin-top:6px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:18px;height:3px;display:inline-block}
+.note{font-size:12px;color:var(--ink-soft);margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+.note b{color:var(--ink)}
+.section-tag{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:var(--ink);color:#fff;padding:2px 8px}
+input[type=range]{min-height:26px;touch-action:pan-y}
+.feedback{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--brass);padding:16px;margin-top:22px}
+.feedback h2{font-family:var(--slab);font-size:18px;font-weight:600;margin-bottom:4px}
+.feedback p{font-size:12.5px;color:var(--ink-soft);margin-bottom:10px}
+.fb-subject{display:flex;align-items:center;gap:0;margin-bottom:8px;flex-wrap:wrap}
+.fb-subject .prefix{font-family:var(--mono);font-size:12.5px;background:var(--ink);color:#fff;padding:7px 10px;white-space:nowrap}
+.fb-subject input{flex:1;min-width:180px;padding:6px 9px;border:1px solid var(--line);font-family:var(--mono);font-size:13px}
+.feedback textarea{width:100%;min-height:84px;padding:8px 10px;border:1px solid var(--line);font-family:var(--body);font-size:13px;resize:vertical}
+.fb-send{margin-top:9px;border:1px solid var(--green);background:var(--green);color:#fff;font-family:var(--mono);font-size:13px;padding:8px 16px;cursor:pointer}
+.fb-send:hover{background:#15523c}
+.fb-alt{font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin-top:8px}
+.fb-who{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.fb-who input{flex:1;min-width:150px;padding:6px 9px;border:1px solid var(--line);font-family:var(--mono);font-size:13px}
+.fb-share{margin-top:9px;margin-left:8px;border:1px solid var(--blue);background:var(--blue);color:#fff;font-family:var(--mono);font-size:13px;padding:8px 16px;cursor:pointer}
+.fb-share:hover{background:#1e3550}
+.shared-banner{background:var(--green-soft);border:1px solid var(--green);padding:9px 14px;margin:12px 0;font-size:13px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+.mc-chip{display:inline-block;font-family:var(--mono);font-weight:600;font-size:13px;padding:4px 12px;border-radius:4px;margin-left:8px}
+.pdfbtn{border:1px solid var(--ink);background:var(--ink);color:#fff;font-family:var(--mono);font-size:12px;padding:7px 14px;cursor:pointer;white-space:nowrap}
+.pdfbtn:hover{background:#33413a}
+.print-head{display:none}
+@media print{
+  body{background:#fff}
+  .wrap{max-width:100%;padding:0}
+  .grid{display:block}
+  .panel,.chartbox,.vcard,.feedback{border:1px solid #bbb;box-shadow:none;break-inside:avoid}
+  .feedback,.addrow,.del,.restore,.kill,.fb-send,.pdfbtn,.lever input[type=range],.mini,.toggle{display:none !important}
+  .lever{margin-bottom:6px}
+  .chartbox{margin-top:12px}
+  .print-head{display:block;font-family:var(--mono);font-size:11px;color:#333;border-bottom:2px solid #333;padding-bottom:6px;margin-bottom:10px}
+  .tscroll{overflow:visible}
+  .tscroll table{min-width:0}
+}
+@media(max-width:640px){
+  .wrap{padding:14px 10px 44px}
+  header h1{font-size:23px}
+  .verdict{grid-template-columns:1fr 1fr;gap:8px}
+  .stamp{grid-column:1/-1}
+  .vcard .num{font-size:19px}
+  .vcard{padding:9px 10px}
+  .panel,.chartbox{padding:12px 10px}
+  td input[type=number],td input[type=text],.lever input[type=number]{font-size:16px}
+  td input[type=number]{width:64px}
+  .legend{gap:10px;font-size:10.5px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="print-head" id="printHead"></div>
+<div id="sharedBanner"></div>
+<header>
+  <div class="eyebrow" style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+    <span>Life Expense Pyramid · Accumulate → Retire → Fund Life</span>
+    <button class="pdfbtn" onclick="downloadPDF()">⬇ Download PDF report</button>
+  </div>
+  <h1>Retirement Corpus — The Magic Number</h1>
+  <p>Every rupee of income at your starting age is split into expense and accumulation lots. Lots inflate with a flat index; accumulation compounds until retirement; the corpus then funds retirement expenses. Change any number — everything recalculates instantly.</p>
+</header>
+
+<div class="verdict" id="verdict"></div>
+
+<div class="grid">
+  <div>
+    <div class="panel">
+      <h2>Assumptions</h2>
+      <div class="lever">
+        <label>Monthly income at starting age (₹) <b id="v_income"></b></label>
+        <input type="number" id="income" value="100000" min="1" step="100">
+      </div>
+      <div class="lever">
+        <label>Starting age <b id="v_start"></b></label>
+        <input type="range" id="start" min="18" max="60" step="1" value="25">
+      </div>
+      <div class="lever">
+        <label>Inflation, per year <b id="v_inf"></b></label>
+        <input type="range" id="inf" min="2" max="10" step="0.5" value="6">
+      </div>
+      <div class="lever">
+        <label>Inflation method</label>
+        <div class="toggle" id="infmode">
+          <button data-v="simple">Simple (flat)</button>
+          <button data-v="compound" class="on">Compound</button>
+        </div>
+      </div>
+      <div class="lever">
+        <label>Salary growth, per year <b id="v_growth"></b></label>
+        <input type="range" id="growth" min="2" max="15" step="0.5" value="6">
+        <label style="margin-top:2px"><span style="font-size:11px">Savings ride on salary; lifestyle at retirement is anchored to the last-drawn salary</span></label>
+      </div>
+      <div class="lever">
+        <label>Healthcare inflation, per year <b id="v_medinf"></b></label>
+        <input type="range" id="medinf" min="4" max="14" step="0.5" value="6">
+        <label style="margin-top:2px"><span style="font-size:11px">Applied to Health Insurance in retirement (India medical inflation ≈ 2× general)</span></label>
+      </div>
+      <div class="lever">
+        <label>Return on accumulation <b id="v_racc"></b></label>
+        <input type="range" id="racc" min="4" max="18" step="0.5" value="10">
+      </div>
+      <div class="lever">
+        <label>Market volatility σ (Monte Carlo) <b id="v_vol"></b></label>
+        <input type="range" id="vol" min="5" max="25" step="1" value="12">
+        <label style="margin-top:2px"><span style="font-size:11px">Yearly swing applied to accumulation &amp; equity-bucket returns in the 1,000 simulations</span></label>
+      </div>
+      <div class="lever" style="border:1px solid var(--line);padding:9px 10px;background:#fff">
+        <label style="margin-bottom:6px"><b style="font-family:var(--slab);font-size:13px">After retirement — corpus buckets</b></label>
+        <label><span>Annuity — share <b id="v_annPct"></b></span><span>rate <b id="v_annRate"></b></span></label>
+        <div class="brow">
+          <input type="range" id="annPct" class="grow" min="0" max="60" step="5" value="0">
+          <input type="range" id="annRate" class="rmini" min="5.5" max="9" step="0.25" value="6.5" title="Annuity rate 5.5–9%">
+        </div>
+        <label style="margin-top:6px"><span>FD / Liquid — share <b id="v_fdPct"></b></span><span>rate <b id="v_fdRate"></b></span></label>
+        <div class="brow">
+          <input type="range" id="fdPct" class="grow" min="0" max="100" step="5" value="100">
+          <input type="range" id="fdRate" class="rmini" min="5.5" max="12" step="0.5" value="7" title="FD/Liquid rate 5.5–12%">
+        </div>
+        <label style="margin-top:6px"><span>Equity / MF — remainder <b id="v_eqPct"></b></span><span>rate <b id="v_eqRate"></b></span></label>
+        <div class="brow">
+          <span class="grow" style="font-size:11px;color:var(--ink-soft)">gets whatever annuity &amp; FD don't take</span>
+          <input type="range" id="eqRate" class="rmini" min="6" max="25" step="0.5" value="12" title="Equity/MF rate 6–25%">
+        </div>
+        <label style="margin-top:2px"><span style="font-size:11px">Annuity principal is locked — pays income for life, passes to nominee. Withdrawals: FD first, equity last. FD 100% @ 7% reproduces the earlier single-rate view.</span></label>
+      </div>
+      <div class="lever">
+        <label>Retirement expenses (of working-age level, cell O2) <b id="v_ratio"></b></label>
+        <input type="range" id="ratio" min="30" max="100" step="5" value="75">
+      </div>
+      <div class="lever">
+        <label>Retirement age <b id="v_retire"></b></label>
+        <input type="range" id="retire" min="45" max="70" step="1" value="60">
+      </div>
+      <div class="lever">
+        <label>Plan until age <b id="v_endage"></b></label>
+        <input type="range" id="endage" min="75" max="105" step="1" value="90">
+      </div>
+    </div>
+    <div class="note panel" style="margin-top:14px">
+      <b>How it computes.</b> Income lots inflate each year by the index. Accumulation lots are monthly amounts (₹5/month → ₹60/year, as in your note), added yearly and compounded at the accumulation return until retirement. Required corpus is the amount at retirement that exactly funds each year's inflated retirement expense (expense ratio applied) with the remainder earning the post-retirement return, ending at zero at the plan-until age. Salary grows at its own rate; savings ride on the salary and the retirement lifestyle is anchored to the last-drawn salary, then inflates at price inflation (healthcare at its own rate). At retirement the corpus deploys into buckets: the annuity share is locked for life (income only, principal to nominee), and withdrawals come from FD first, equity last; the magic number is found by search — the smallest corpus that survives the plan under the same bucket policy, after pension or rent income. When a loan or goal with a year-slider ends before retirement, its freed share automatically flows into a matching "Freed when … ends" savings tranche from that very year — shorten an EMI and watch the corpus respond. Edit or Remove the freed tranche to redirect less than 100%. Under every category name the grey line shows the exact span the formula uses — by default Education Loan runs 15 yrs (25→40), House Loan EMI 30 yrs (25→55), Child Education &amp; Marriage 35 yrs (25→60) — and it updates the moment you change From / Till / retirement ages.
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2><span class="section-tag">Expense</span> &nbsp;Lots — where the money goes</h2>
+      <div class="tscroll"><table id="expTable">
+        <thead><tr>
+          <th>Category</th><th>% of income</th><th>From age</th><th>Till age / years</th><th>In retirement till</th><th></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <button class="addrow" onclick="addExpense()">+ Add expense category</button>
+
+      <h2 style="margin-top:22px"><span class="section-tag" style="background:var(--green)">Accumulation</span> &nbsp;Lots — what builds the corpus</h2>
+      <div class="tscroll"><table id="savTable">
+        <thead><tr>
+          <th>Tranche (e.g. after a loan ends)</th><th>% of income (lumpsum in ₹)</th><th>From age</th><th></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <button class="addrow" onclick="addSaving()">+ Add accumulation tranche</button>
+
+      <h2 style="margin-top:22px"><span class="section-tag" style="background:var(--blue)">Income</span> &nbsp;Retirement income streams — pension, rent, royalties</h2>
+      <div class="tscroll"><table id="incTable">
+        <thead><tr>
+          <th>Stream</th><th>₹/month (at retirement)</th><th>From age</th><th>Till age</th><th>Inflates?</th><th></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <button class="addrow" onclick="addIncome()">+ Add income stream</button>
+      <div class="alloc-note" id="allocNote"></div>
+    </div>
+
+    <div class="chartbox">
+      <h2>Corpus journey — the Life Expense Pyramid</h2>
+      <div class="cap">Gold: the accumulation pyramid → corpus column at retirement · Blue: corpus funding life · Bars: yearly expense burden · Dashed red: the magic number.</div>
+      <svg id="chart1" viewBox="0 0 900 372" width="100%"></svg>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--gold)"></i>Accumulation pyramid</span>
+        <span><i class="sw" style="background:#6FA8DC"></i>Corpus (drawdown)</span>
+        <span><i class="sw" style="background:var(--pinkb)"></i>Yearly expense burden</span>
+        <span><i class="sw" style="background:var(--red);height:0;border-top:3px dashed var(--red)"></i>Required at retirement</span>
+      </div>
+    </div>
+
+    <div class="chartbox">
+      <h2>Yearly retirement expense the corpus must fund</h2>
+      <div class="cap">Inflated category expenses × retirement expense ratio, for each retirement year.</div>
+      <svg id="chart2" viewBox="0 0 900 220" width="100%"></svg>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  Defaults are loaded from your <b>Life_Expense_Pyramid.xlsx</b>: 20 lots of ₹5 on a ₹100 income; tax ×5 lots, house expense ×4, loans that end and roll into savings tranches at ages 40 and 55, and the 60% retirement ratio from cell O2. Change income and starting age to your own to see actual rupee values.
+</div>
+<div class="chartbox">
+      <h2>Monte Carlo — will the plan survive real markets? <span class="mc-chip" id="mcChip">…</span></h2>
+      <div class="cap">1,000 simulated lives: accumulation and equity-bucket returns swing ±σ each year (FD and annuity stay fixed). Band: 10th–90th percentile of wealth · dark line: median · red: paths that ran dry.</div>
+      <svg id="chart3" viewBox="0 0 900 260" width="100%"></svg>
+</div>
+
+<div class="feedback">
+  <h2>Suggestions &amp; feedback</h2>
+  <p>Found a bug, want a new category, or have an enhancement idea? Write below — your email app opens with everything pre-filled.</p>
+  <div class="fb-who">
+    <input type="text" id="fbName" maxlength="60" placeholder="Your name (goes with share link & email)">
+    <input type="email" id="fbEmail" maxlength="80" placeholder="Your email (so we can reply)">
+  </div>
+  <div class="fb-subject">
+    <span class="prefix">Retirement Corpus App —&nbsp;</span>
+    <input type="text" id="fbSubject" maxlength="80" placeholder="write your own words (e.g. add step-up income)">
+  </div>
+  <textarea id="fbMsg" maxlength="1500" placeholder="Your message… (what you tried, what you expected, what you'd like added)"></textarea>
+  <label style="display:block;font-size:12px;color:var(--ink-soft);margin-top:7px"><input type="checkbox" id="fbAttach"> Attach my current numbers (assumptions &amp; verdict) — only sent if you tick this</label>
+  <br><button class="fb-send" onclick="sendFeedback()">Send via your email app ✉</button><button class="fb-share" onclick="copyShareLink()">🔗 Copy share link</button>
+  <span id="shareMsg" style="font-family:var(--mono);font-size:11.5px;color:var(--green);margin-left:8px"></span>
+  <div class="fb-alt" id="fbAlt"></div>
+</div>
+<footer style="margin-top:22px;border-top:3px double var(--ink);padding-top:12px;text-align:center;font-family:var(--mono);font-size:11.5px;letter-spacing:.4px;color:var(--ink-soft)">
+  The calculations, buckets, and lots shown here are for illustration only — not a return guarantee or investment advice.<br>
+  Please consult a financial advisor for a detailed view tailored to your situation.<br>
+  <span style="opacity:.75">Model &amp; concept: Suresh Tumu · AMFI-certified · TechnoFunda community · Built in partnership with Claude (Anthropic) · Jul 2026</span>
+</footer>
+</div>
+
+<script>
+// ---------- state (defaults transcribed from the Excel) ----------
+let expenses = [
+  {name:"Tax",                         amt:25, from:25, till:100, ret:100, atStart:true},
+  {name:"House Expense",               amt:20, from:25, till:100, ret:100, atStart:true},
+  {name:"Education Loan",              amt:5,  from:25, till:40,  ret:0, atStart:true, slider:true, years:15},
+  {name:"Child Education & Marriage",  amt:5,  from:25, till:55,  ret:0, atStart:true, slider:true, years:30},
+  {name:"House Loan EMI",              amt:10, from:25, till:55,  ret:0, atStart:true, slider:true, years:30},
+  {name:"Going Places",                amt:5,  from:25, till:60,  ret:80, atStart:true},
+  {name:"Vehicle EMI / Electronics / Other", amt:5, from:25, till:60, ret:90, atStart:true, slider:true, years:35},
+  {name:"Health Insurance",            amt:5,  from:25, till:100, ret:100, atStart:true, med:true},
+  {name:"Term / Auto / Property Insurance", amt:5, from:25, till:60, ret:0, atStart:true},
+];
+let savings = [
+  {name:"Already Accumulated Corpus (lumpsum ₹)", amt:500000, from:25, kind:"lump", atStart:true},
+  {name:"Base savings (from day one)", amt:15, from:25, atStart:true},
+];
+let P = {income:100000, inf:6, infmode:"compound", growth:6, medinf:6, racc:10, vol:12,
+         annPct:0, annRate:6.5, fdPct:100, fdRate:7, eqRate:12,
+         ratio:75, retire:60, endage:90, startAge:25};
+let incomes = [];   // retirement income streams: {name, amt(abs ₹/mo at retirement), from, till, inflating, active, custom}
+
+// snapshot each row's default values so a removed row can be restored
+function snapDefaults(list){ for(const r of list){ r.active=true; r.def={...r}; delete r.def.active; delete r.def.def; } }
+snapDefaults(expenses); snapDefaults(savings);
+// auto-linked tranches: freed loan/goal money flows into savings the year it ends
+expenses.forEach((e,i)=>{
+  if(!e.slider) return;
+  const r={name:"Freed when "+e.name+" ends", amt:e.amt, from:e.till, auto:true, link:i, active:true};
+  r.def={...r}; delete r.def.active; delete r.def.def;
+  savings.push(r);
+});
+function syncAutoTranches(){
+  for(let i=0;i<savings.length;i++){
+    const s=savings[i];
+    if(!s.auto) continue;
+    const e=expenses[s.link];
+    s.from=e.till;
+    if(!s.overridden){ s.amt=e.amt; s.active=(e.active!==false); }
+    const fr=document.getElementById("fr-s"+i); if(fr) fr.textContent=s.from;
+    const sp=document.getElementById("sp-s"+i); if(sp) sp.textContent=(s.active!==false)?spanTextS(s):"—";
+  }
+}
+// ---- shareable scenario links ----
+const PRISTINE = {E:JSON.parse(JSON.stringify(expenses,(k,v)=>k==="def"?undefined:v)),
+                  S:JSON.parse(JSON.stringify(savings,(k,v)=>k==="def"?undefined:v))};
+function shareState(){
+  const strip=a=>JSON.parse(JSON.stringify(a,(k,v)=>k==="def"?undefined:v));
+  return {v:1, P:{...P}, E:strip(expenses), S:strip(savings), I:strip(incomes),
+          who:{n:(document.getElementById("fbName").value||"").trim(),
+               e:(document.getElementById("fbEmail").value||"").trim()}};
+}
+function copyShareLink(){
+  const b64=btoa(unescape(encodeURIComponent(JSON.stringify(shareState())))).replace(/\+/g,"-").replace(/\//g,"_");
+  const url=location.origin+location.pathname+"#s="+b64;
+  const done=()=>{const m=document.getElementById("shareMsg"); m.textContent="link copied ✓"; setTimeout(()=>m.textContent="",3000);};
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done,()=>prompt("Copy this link:",url));
+  else prompt("Copy this link:",url);
+}
+function reattachDefs(){
+  expenses.forEach((r,i)=>{ r.def = i<PRISTINE.E.length ? {...PRISTINE.E[i]} : {...r}; delete r.def.def; });
+  savings.forEach((r,i)=>{ r.def = i<PRISTINE.S.length ? {...PRISTINE.S[i]} : {...r}; delete r.def.def; });
+  incomes.forEach(r=>{ r.def={...r}; delete r.def.def; });
+}
+function loadFromHash(){
+  const m=location.hash.match(/#s=([A-Za-z0-9_\-]+)/);
+  if(!m) return;
+  try{
+    const st=JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g,"+").replace(/_/g,"/")))));
+    if(st.v!==1) return;
+    for(const k in P) if(k in st.P) P[k]=st.P[k];
+    expenses.length=0; st.E.forEach(r=>expenses.push(r));
+    savings.length=0;  st.S.forEach(r=>savings.push(r));
+    incomes.length=0;  (st.I||[]).forEach(r=>incomes.push(r));
+    reattachDefs();
+    ["income","start","inf","growth","medinf","racc","vol","annPct","annRate","fdPct","fdRate","eqRate","ratio","retire","endage"].forEach(id=>{
+      const el=document.getElementById(id); if(el && id in P) el.value=P[id];
+      else if(el && id==="start") el.value=P.startAge;
+    });
+    document.getElementById("start").value=P.startAge;
+    document.querySelectorAll("#infmode button").forEach(b=>b.classList.toggle("on", b.dataset.v===P.infmode));
+    const who=st.who||{};
+    if(who.n||who.e){
+      document.getElementById("sharedBanner").innerHTML =
+        `<div class="shared-banner"><span>📩 Scenario shared by <b>${(who.n||"a community member").replace(/</g,"&lt;")}</b>${who.e?` · contact: <b>${who.e.replace(/</g,"&lt;")}</b>`:""}</span><a href="${location.pathname}" style="font-family:var(--mono);font-size:12px">↺ load defaults</a></div>`;
+      document.getElementById("fbName").value=who.n||""; document.getElementById("fbEmail").value=who.e||"";
+    }
+  }catch(err){ /* malformed link — ignore */ }
+}
+
+// ---------- engine ----------
+function mult(age){   // salary index — contributions & lifestyle ride on this
+  const y = age - P.startAge;
+  return P.infmode==="simple" ? 1 + (P.growth/100)*y : Math.pow(1+P.growth/100, y);
+}
+function infGrow(age, rate){   // price index from retirement onward
+  const y = Math.max(0, age - P.retire);
+  return P.infmode==="simple" ? 1 + (rate/100)*y : Math.pow(1+rate/100, y);
+}
+function streamIncome(age){    // yearly ₹ from pension/rent rows (absolute rupees)
+  let t=0;
+  for(const s of incomes){
+    if(s.active===false) continue;
+    if(age>=s.from && age<s.till) t += s.amt*12*(s.inflating? infGrow(age,P.inf) : 1);
+  }
+  return t;
+}
+function scale(){ return P.income/100; }
+function allocTotal(){
+  let t=0;
+  for(const e of expenses) if(e.active!==false && e.from<=P.startAge && e.till>P.startAge) t+=e.amt;
+  for(const s of savings) if(s.active!==false && s.kind!=="lump" && s.from<=P.startAge) t+=s.amt;
+  return t;
+}
+function norm(){ const t=allocTotal(); return t>100 ? 100/t : 1; }
+function retExpense(age){ // yearly: lifestyle anchored to last-drawn salary, then price inflation (healthcare separate)
+  let gen=0, med=0;
+  for(const e of expenses){
+    if(e.active===false || !e.ret || age>=e.ret) continue;
+    if(e.med) med += e.amt; else gen += e.amt;
+  }
+  const base = 12 * mult(P.retire) * (P.ratio/100) * scale() * norm();
+  return gen*base*infGrow(age,P.inf) + med*base*infGrow(age,P.medinf);
+}
+function walkBuckets(C, wantTraj){   // deploy corpus into buckets at retirement and draw down
+  const A = C*P.annPct/100;
+  let d = C*Math.min(P.fdPct,100-P.annPct)/100;
+  let e = Math.max(0, C - A - d);
+  const annIncome = A*(P.annRate/100);          // level payout, for life
+  let dep=null; const traj=[];
+  for(let age=P.retire; age<P.endage; age++){
+    if(age>P.retire){ d += lumpAt(age); }       // post-retirement windfalls land in FD bucket
+    let need = retExpense(age) - annIncome - streamIncome(age);
+    if(need<0){ d += -need; need=0; }           // surplus income parks in FD bucket
+    if(need<=d) d-=need;
+    else { let rem=need-d; d=0;
+           if(rem<=e) e-=rem; else { e=0; if(dep===null) dep=age; } }
+    d*=1+P.fdRate/100; e*=1+P.eqRate/100;
+    if(wantTraj) traj.push({age:age+1, v:Math.max(d+e,0), phase:"draw"});
+  }
+  return {left:d+e, dep, annPrincipal:A, traj};
+}
+// ---- Monte Carlo (seeded, reproducible) ----
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+function runMonteCarlo(N){
+  const rnd=mulberry32(20260718);
+  const gauss=()=>{let u=0,v=0;while(u===0)u=rnd();while(v===0)v=rnd();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};
+  const sig=P.vol/100, ages=[]; for(let a=P.startAge;a<P.endage;a++) ages.push(a);
+  const paths=[], fails=[];
+  let success=0;
+  for(let n=0;n<N;n++){
+    let c=0; const wealth=[];
+    for(let age=P.startAge; age<P.retire; age++){
+      let contrib=0;
+      for(const s of savings){ if(s.active===false||s.kind==="lump") continue; if(age>=s.from) contrib+=s.amt; }
+      contrib*=12*mult(age)*scale()*norm();
+      const r=P.racc/100+sig*gauss();
+      c=(c+lumpAt(age))*(1+r)+contrib;
+      wealth.push(Math.max(c,0));
+    }
+    c+=lumpAt(P.retire);
+    const A=c*P.annPct/100; let d=c*Math.min(P.fdPct,100-P.annPct)/100; let e=Math.max(0,c-A-d);
+    const annIncome=A*(P.annRate/100);
+    let dep=null;
+    for(let age=P.retire; age<P.endage; age++){
+      if(age>P.retire) d+=lumpAt(age);
+      let need=retExpense(age)-annIncome-streamIncome(age);
+      if(need<0){d+=-need;need=0;}
+      if(need<=d)d-=need; else{let rem=need-d;d=0; if(rem<=e)e-=rem; else{e=0; if(dep===null)dep=age;}}
+      d*=1+P.fdRate/100; e*=1+(P.eqRate/100+sig*gauss());
+      wealth.push(Math.max(d+e,0));
+    }
+    if(dep===null) success++;
+    paths.push(wealth); if(dep!==null) fails.push(n);
+  }
+  // per-year percentiles
+  const yrs=ages.length, p10=[],p50=[],p90=[];
+  for(let y=0;y<yrs;y++){
+    const col=paths.map(w=>w[y]).sort((a,b)=>a-b);
+    p10.push(col[Math.floor(N*0.10)]); p50.push(col[Math.floor(N*0.50)]); p90.push(col[Math.floor(N*0.90)]);
+  }
+  return {successPct:Math.round(success/N*100), ages:ages.map(a=>a+1), p10,p50,p90,
+          sampleFails: fails.slice(0,12).map(i=>paths[i])};
+}
+let lastMC=null;
+function renderChart3(mc){
+  const W=900,H=260,L=70,R=20,T=16,B=34;
+  const maxV=Math.max(...mc.p90,1)*1.06, minA=mc.ages[0]-1, maxA=P.endage;
+  const X=a=>L+(a-minA)/(maxA-minA)*(W-L-R), Y=v=>T+(1-Math.min(v,maxV)/maxV)*(H-T-B);
+  let s="";
+  for(let i=0;i<=3;i++){const v=maxV*i/3,y=Y(v);
+    s+=line(L,y,W-R,y,`stroke="#D8DED6" stroke-width="1"`);
+    s+=`<text x="${L-6}" y="${y+4}" text-anchor="end" font-size="10" fill="#4A5A50">${fmt(v)}</text>`;}
+  // band p10-p90
+  let band=`M ${X(mc.ages[0])} ${Y(mc.p90[0])}`;
+  mc.ages.forEach((a,i)=>band+=` L ${X(a)} ${Y(mc.p90[i])}`);
+  for(let i=mc.ages.length-1;i>=0;i--) band+=` L ${X(mc.ages[i])} ${Y(mc.p10[i])}`;
+  s+=`<path d="${band} Z" fill="var(--blue)" opacity="0.13"/>`;
+  // failing sample paths
+  for(const w of mc.sampleFails){
+    let d=`M ${X(mc.ages[0])} ${Y(w[0])}`;
+    mc.ages.forEach((a,i)=>{ if(i<w.length) d+=` L ${X(a)} ${Y(w[i])}`; });
+    s+=`<path d="${d}" fill="none" stroke="var(--red)" stroke-width="1" opacity="0.35"/>`;
+  }
+  // median
+  let med=`M ${X(mc.ages[0])} ${Y(mc.p50[0])}`;
+  mc.ages.forEach((a,i)=>med+=` L ${X(a)} ${Y(mc.p50[i])}`);
+  s+=`<path d="${med}" fill="none" stroke="var(--blue)" stroke-width="2.6"/>`;
+  s+=line(X(P.retire),T,X(P.retire),H-B,`stroke="var(--ink)" stroke-width="1" stroke-dasharray="3 3" opacity="0.5"`);
+  for(let a=Math.ceil(minA/10)*10;a<=maxA;a+=10)
+    s+=`<text x="${X(a)}" y="${H-12}" text-anchor="middle" font-size="10" fill="#4A5A50">${a}</text>`;
+  s+=`<text x="${(L+W-R)/2}" y="${H-1}" text-anchor="middle" font-size="10" fill="#4A5A50">AGE</text>`;
+  document.getElementById("chart3").innerHTML=s;
+  const chip=document.getElementById("mcChip"), ok=mc.successPct>=80, mid=mc.successPct>=50;
+  chip.textContent=mc.successPct+"% of lives survive to "+P.endage;
+  chip.style.background=ok?"var(--green-soft)":(mid?"#F4E9CF":"var(--red-soft)");
+  chip.style.color=ok?"var(--green)":(mid?"#8a6a1f":"var(--red)");
+}
+function requiredCorpus(){   // smallest corpus that survives to plan-until under the same bucket policy
+  let lo=0, hi=1;
+  const ok=C=>walkBuckets(C,false).dep===null;
+  if(ok(0)) return 0;
+  while(!ok(hi) && hi<1e15) hi*=2;
+  for(let k=0;k<60;k++){ const m=(lo+hi)/2; if(ok(m)) hi=m; else lo=m; }
+  return hi;
+}
+function lumpAt(age){
+  let t=0;
+  for(const s of savings){
+    if(s.active===false || s.kind!=="lump") continue;
+    if(age===Math.max(s.from,P.startAge)) t += s.amt;
+  }
+  return t;
+}
+function simulate(){
+  const traj=[]; let c=0;
+  for(let age=P.startAge; age<P.retire; age++){
+    let contrib=0;
+    for(const s of savings){
+      if(s.active===false || s.kind==="lump") continue;
+      if(age>=s.from) contrib += s.amt;
+    }
+    contrib *= 12 * mult(age) * scale() * norm();
+    c = (c + lumpAt(age))*(1+P.racc/100) + contrib;
+    traj.push({age:age+1, v:c, phase:"acc"});
+  }
+  c += lumpAt(P.retire);   // corpus already in hand when start = retire, or a windfall landing exactly at retirement
+  const achieved=c;
+  const req = requiredCorpus();
+  const w = walkBuckets(achieved, true);
+  for(const pnt of w.traj) traj.push(pnt);
+  return {achieved, req, traj, leftover:w.left, depleted:w.dep, annPrincipal:w.annPrincipal};
+}
+
+// ---------- formatting ----------
+function fmt(n){
+  const a=Math.abs(n);
+  if(a>=1e7) return "₹"+(n/1e7).toFixed(2)+" Cr";
+  if(a>=1e5) return "₹"+(n/1e5).toFixed(2)+" L";
+  if(a>=1e3) return "₹"+(n/1e3).toFixed(1)+" K";
+  return "₹"+Math.round(n).toLocaleString("en-IN");
+}
+function lots(amt){ const n=amt/5; return (Number.isInteger(n)? n : n.toFixed(1))+" × ₹5"; }
+
+// ---------- render tables ----------
+function num(v,min,max,cb){ return `<input type="number" value="${v}" min="${min}" max="${max}" onchange="${cb}">`; }
+function renderTables(){
+  const dis=a=>a?"":"disabled";
+  const eb=document.querySelector("#expTable tbody");
+  eb.innerHTML = expenses.map((e,i)=>{
+    const a=e.active!==false, v=k=>a?e[k]:0;
+    const fromCell = e.slider
+      ? `<span class="lots">at start</span>`
+      : `<input type="number" value="${v('from')}" min="18" max="100" ${dis(a)} onchange="upd('e',${i},'from',this.value)">`;
+    const tillCell = e.slider
+      ? `<input type="range" class="mini" min="0" max="${Math.max(0,P.retire-P.startAge)}" step="1" value="${a?effYears(e):0}" ${dis(a)} oninput="updYears('e',${i},this.value)"><span class="yl" id="yl-e${i}">${a?effYears(e):0} yrs</span>`
+      : `<input type="number" value="${v('till')}" min="18" max="100" ${dis(a)} onchange="upd('e',${i},'till',this.value)">`;
+    return `<tr class="${a?'':'inactive'}">
+    <td><input type="text" value="${e.name.replace(/"/g,'&quot;')}" ${dis(a)} onchange="expenses[${i}].name=this.value"><div class="spanline" id="sp-e${i}">${a?spanTextE(e):"—"}</div></td>
+    <td><input type="number" value="${v('amt')}" min="0" max="100" ${dis(a)} onchange="upd('e',${i},'amt',this.value)"> <span style="font-size:10px;color:var(--ink-soft)">%</span></td>
+    <td>${fromCell}</td>
+    <td>${tillCell}</td>
+    <td><input type="number" value="${v('ret')}" min="0" max="105" ${dis(a)} onchange="upd('e',${i},'ret',this.value)"> <span style="font-size:10px;color:var(--ink-soft)">0 = stops</span></td>
+    <td>${btns('e',i,a,e.custom)}</td>
+  </tr>`;}).join("");
+  const ib=document.querySelector("#incTable tbody");
+  ib.innerHTML = incomes.length ? incomes.map((s,i)=>{
+    const a=s.active!==false, v=k=>a?s[k]:0;
+    return `<tr class="${a?'':'inactive'}">
+    <td><input type="text" value="${s.name.replace(/"/g,'&quot;')}" ${dis(a)} onchange="incomes[${i}].name=this.value"><div class="spanline">${a?`₹${(s.amt||0).toLocaleString("en-IN")}/mo · ${s.from}→${s.till} · ${s.inflating?"inflates with prices":"fixed payout"}`:"—"}</div></td>
+    <td><input type="number" value="${v('amt')}" min="0" step="500" ${dis(a)} onchange="upd('i',${i},'amt',this.value)"> <span style="font-size:10px;color:var(--ink-soft)">₹</span></td>
+    <td><input type="number" value="${v('from')}" min="45" max="100" ${dis(a)} onchange="upd('i',${i},'from',this.value)"></td>
+    <td><input type="number" value="${v('till')}" min="45" max="105" ${dis(a)} onchange="upd('i',${i},'till',this.value)"></td>
+    <td style="text-align:center"><input type="checkbox" ${s.inflating?"checked":""} ${dis(a)} onchange="incomes[${i}].inflating=this.checked; recalc();"></td>
+    <td>${btns('i',i,a,true)}</td>
+  </tr>`;}).join("") : `<tr><td colspan="6" style="color:var(--ink-soft);font-size:12px;padding:8px 6px">None yet — add a pension, rent, or royalty. These reduce the magic number directly.</td></tr>`;
+  const sb=document.querySelector("#savTable tbody");
+  sb.innerHTML = savings.map((s,i)=>{
+    const a=s.active!==false, v=k=>a?s[k]:0;
+    const fromCell = s.auto
+      ? `<span class="lots" id="fr-s${i}">${s.from}</span>`
+      : `<input type="number" value="${v('from')}" min="18" max="70" ${dis(a)} onchange="upd('s',${i},'from',this.value)">`;
+    return `<tr class="${a?'':'inactive'}">
+    <td><input type="text" value="${s.name.replace(/"/g,'&quot;')}" ${dis(a)} onchange="savings[${i}].name=this.value"><div class="spanline" id="sp-s${i}">${a?spanTextS(s):"—"}</div></td>
+    <td><input type="number" value="${v('amt')}" min="0" ${dis(a)} onchange="upd('s',${i},'amt',this.value)"> <span style="font-size:10px;color:var(--ink-soft)">${s.kind==="lump"?"₹":"%"}</span></td>
+    <td>${fromCell}</td>
+    <td>${btns('s',i,a,s.custom)}</td>
+  </tr>`;}).join("");
+}
+function rupees(pct){ return fmt(pct/100*P.income*norm())+"/mo"; }
+function spanTextE(e){
+  const f=Math.max(e.from,P.startAge), t=Math.min(e.till,P.retire), yrs=Math.max(0,t-f);
+  if(t<=f && e.ret<=P.retire) return `outside this plan — ended by ${e.till}`;
+  let s = e.slider ? `${yrs} yrs · ${f}→${t}` : (t<=f ? `no working-years cost` : `${f}→${t} · ${yrs} yrs`);
+  if(e.ret>P.retire) s+=` · then in retirement till ${Math.min(e.ret,P.endage)}`;
+  else if(e.till<P.retire) s+=` · ends at ${t}`;
+  else s+=` · stops at retirement`;
+  return s+` · ${rupees(e.amt)}`;
+}
+function spanTextS(s){
+  if(s.kind==="lump") return `one-time ${fmt(s.amt)} at age ${Math.max(s.from,P.startAge)}`;
+  const f=Math.max(s.from,P.startAge), yrs=Math.max(0,P.retire-f);
+  const base=`invests ${f}→${P.retire} · ${yrs} yrs · ${rupees(s.amt)}`;
+  return s.auto ? `auto-linked · ${base}` : base;
+}
+function btns(t,i,a,custom){
+  const b1 = a ? `<button class="del" onclick="deactivate('${t}',${i})" title="Grey out — sets values to zero">Remove</button>`
+               : `<button class="restore" onclick="restoreRow('${t}',${i})" title="Bring back with default values">Restore</button>`;
+  const b2 = custom ? `<button class="kill" onclick="deleteRow('${t}',${i})" title="Delete this row permanently">Delete</button>` : "";
+  return b1+b2;
+}
+function deleteRow(t,i){ rowsOf(t).splice(i,1); renderTables(); recalc(); }
+function addIncome(){ const r={name:"Pension / Rent",amt:10000,from:P.retire,till:P.endage,inflating:true,active:true,custom:true}; r.def={...r}; incomes.push(r); renderTables(); recalc(); }
+function rowsOf(t){ return t==='e'?expenses:(t==='s'?savings:incomes); }
+function upd(t,i,k,v){ const row=rowsOf(t)[i]; row[k]=parseFloat(v)||0; if(k==='from') row.atStart=false; if(t==='s'&&row.auto&&k==='amt') row.overridden=true; renderTables(); recalc(); }
+function updYears(t,i,v){
+  const row=expenses[i];
+  row.years=Math.max(0,parseInt(v)||0);
+  row.till=P.startAge+effYears(row);
+  const yl=document.getElementById(`yl-e${i}`); if(yl) yl.textContent=effYears(row)+" yrs";
+  const sp=document.getElementById(`sp-e${i}`); if(sp) sp.textContent=spanTextE(row);
+  recalc();   // syncAutoTranches inside recalc refreshes the linked tranche's from-age and spanline in place
+}
+function effYears(e){ return Math.min(e.years, Math.max(0,P.retire-P.startAge)); }
+function clampRows(){
+  for(const e of expenses){
+    if(!e.slider) continue;
+    e.from=P.startAge;
+    e.till=P.startAge+effYears(e);
+    if(e.def) e.def.from=P.startAge;
+  }
+}
+function deactivate(t,i){ const row=rowsOf(t)[i]; row.active=false; if(row.auto) row.overridden=true; renderTables(); recalc(); }
+function restoreRow(t,i){
+  const row=rowsOf(t)[i];
+  Object.assign(row, row.def);           // back to default values
+  row.active=true;
+  row.overridden=false;                  // auto rows re-link to their loan
+  renderTables(); recalc();              // recalculates with current income, ages, rates
+}
+function addExpense(){ const r={name:"New category",amt:5,from:P.startAge,till:60,ret:0,atStart:true}; r.def={...r}; r.active=true; r.custom=true; expenses.push(r); renderTables(); recalc(); }
+function addSaving(){ const r={name:"New tranche",amt:5,from:P.startAge,atStart:true}; r.def={...r}; r.active=true; r.custom=true; savings.push(r); renderTables(); recalc(); }
+
+// ---------- verdict + allocation check ----------
+function renderVerdict(r){
+  const gap=r.achieved-r.req, ok=gap>=0, fullyByIncome=r.req<1000;
+  const nom = r.annPrincipal>0 ? ` + annuity ${fmt(r.annPrincipal)} to nominee` : "";
+  const dep = r.depleted ? `Depletes at age ${r.depleted}${r.annPrincipal>0||incomes.some(s=>s.active!==false)?" (annuity/pension income continues)":""}` : `Lasts to ${P.endage}, leftover ${fmt(r.leftover)}${nom}`;
+  document.getElementById("verdict").innerHTML = `
+    <div class="vcard"><div class="lbl">Corpus at ${P.retire} (accumulated)</div><div class="num" style="color:var(--green)">${fmt(r.achieved)}</div><div class="sub">${P.racc}% return · ${P.infmode} ${P.inf}% inflation</div></div>
+    <div class="vcard"><div class="lbl">Magic number — required at ${P.retire}</div><div class="num" style="color:var(--red)">${fmt(r.req)}</div><div class="sub">funds ages ${P.retire}–${P.endage} at ${P.ratio}% expenses · ${retExpense(P.retire)>0?(r.req/retExpense(P.retire)).toFixed(1):"—"}× first-year expense</div></div>
+    <div class="vcard"><div class="lbl">${ok?"Surplus":"Shortfall"}</div><div class="num" style="color:${ok?'var(--green)':'var(--red)'}">${fmt(Math.abs(gap))}</div><div class="sub">${fullyByIncome?"expenses fully covered by income streams":(r.achieved/Math.max(r.req,1)).toFixed(2)+"× of what is required"}</div></div>
+    <div class="vcard"><div class="lbl">If you retire with what you saved</div><div class="num" style="font-size:16px;padding-top:8px">${dep}</div><div class="sub">buckets: annuity ${P.annPct}% @${P.annRate}% · FD ${Math.min(P.fdPct,100-P.annPct)}% @${P.fdRate}% · equity ${Math.max(0,100-P.annPct-Math.min(P.fdPct,100-P.annPct))}% @${P.eqRate}%</div></div>
+    <div class="stamp ${ok?'ok':'bad'}"><div class="inner">${ok?'ON&nbsp;TRACK':'GAP!'}</div></div>`;
+  // allocation check at starting age (percent of income)
+  const tot=allocTotal();
+  const an=document.getElementById("allocNote");
+  an.className = "alloc-note"+(Math.abs(tot-100)>0.01?" bad":"");
+  if(Math.abs(tot-100)<=0.01)
+    an.textContent = `Allocation at age ${P.startAge}: 100% of income. Balanced ✓`;
+  else if(tot>100)
+    an.textContent = `Allocation at age ${P.startAge}: ${tot.toFixed(0)}% — every row is proportionately scaled by ×${(100/tot).toFixed(2)} to 100% in all calculations.`;
+  else
+    an.textContent = `Allocation at age ${P.startAge}: ${tot.toFixed(0)}% — ${(100-tot).toFixed(0)}% of income is unallocated (neither spent nor invested).`;
+}
+
+// ---------- charts ----------
+function line(x1,y1,x2,y2,st){return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" ${st}/>`}
+function renderChart1(r){
+  const W=900,H=372,L=70,R=20,T=44,B=44;
+  const vals=r.traj.map(p=>p.v);
+  const maxV=Math.max(...vals,r.req,1)*1.10, minA=P.startAge, maxA=P.endage;
+  const X=a=>L+(a-minA)/(maxA-minA)*(W-L-R), Y=v=>T+(1-v/maxV)*(H-T-B);
+  const GOLD="var(--gold)", PINK="var(--pinkb)", BLUE="#4E86BE";
+  const ok=r.achieved>=r.req, pct=Math.min(999,Math.round(r.achieved/Math.max(r.req,1)*100));
+  const acc=r.traj.filter(p=>p.phase==="acc"), draw=r.traj.filter(p=>p.phase==="draw");
+  let s="";
+  // gridlines + y labels
+  for(let i=0;i<=4;i++){const v=maxV*i/4,y=Y(v);
+    s+=line(L,y,W-R,y,`stroke="#D8DED6" stroke-width="1"`);
+    s+=`<text x="${L-6}" y="${y+4}" text-anchor="end" font-size="10" fill="#4A5A50">${fmt(v)}</text>`;}
+  // retirement zone
+  s+=`<rect x="${X(P.retire)}" y="${T}" width="${W-R-X(P.retire)}" height="${H-T-B}" fill="#2C4A6E" opacity="0.05"/>`;
+  // phase labels
+  const yrsA=P.retire-minA, yrsF=maxA-P.retire;
+  if(yrsA>=5) s+=`<text x="${(X(minA)+X(P.retire))/2}" y="${T+13}" text-anchor="middle" font-size="9.5" letter-spacing="3" fill="#7E8B7E">ACCUMULATE · ${yrsA} YEARS</text>`;
+  if(yrsF>=8) s+=`<text x="${(X(P.retire)+X(maxA))/2}" y="${T+13}" text-anchor="middle" font-size="9.5" letter-spacing="3" fill="#7E8B7E">FUND LIFE · ${yrsF} YEARS</text>`;
+  // expense burden bars
+  const bw=Math.max(2,(W-L-R)/(maxA-minA)-2);
+  for(let a=P.retire;a<maxA;a++){
+    const v=retExpense(a);
+    s+=`<rect x="${X(a)+1}" y="${Y(v)}" width="${bw}" height="${Math.max(0,Y(0)-Y(v))}" fill="${PINK}" opacity="0.5"/>`;
+  }
+  // accumulation wedge + line
+  if(acc.length){
+    let d=`M ${X(minA)} ${Y(0)}`;
+    acc.forEach(p=>d+=` L ${X(p.age)} ${Y(p.v)}`);
+    s+=`<path d="${d} L ${X(P.retire)} ${Y(0)} Z" fill="${GOLD}" opacity="0.13"/>`;
+    s+=`<path d="${d}" fill="none" stroke="${GOLD}" stroke-width="2.8"/>`;
+  }
+  // corpus column at retirement (the pyramid becomes a column)
+  const cw=Math.max(8,X(minA+1.4)-X(minA));
+  s+=`<rect x="${X(P.retire)-cw/2}" y="${Y(r.achieved)}" width="${cw}" height="${Math.max(0,Y(0)-Y(r.achieved))}" fill="${GOLD}" opacity="0.32"/>`;
+  // drawdown curve
+  if(draw.length){
+    let d=`M ${X(P.retire)} ${Y(r.achieved)}`;
+    draw.forEach(p=>d+=` L ${X(p.age)} ${Y(p.v)}`);
+    s+=`<path d="${d}" fill="none" stroke="${BLUE}" stroke-width="2.8"/>`;
+  }
+  // magic number dashed line + label
+  s+=line(X(P.retire),Y(r.req),W-R,Y(r.req),`stroke="var(--red)" stroke-width="2" stroke-dasharray="7 5"`);
+  s+=`<text x="${X(P.retire)+12}" y="${Y(r.req)+17}" font-size="12" font-weight="bold" fill="var(--red)">Magic number: ${fmt(r.req)} required</text>`;
+  // retire marker
+  s+=line(X(P.retire),T,X(P.retire),H-B,`stroke="var(--ink)" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.6"`);
+  s+=`<circle cx="${X(P.retire)}" cy="${Y(r.achieved)}" r="5" fill="${GOLD}" stroke="#fff" stroke-width="2"/>`;
+  // corpus annotation (anchored left of the column)
+  const cy=Math.max(Y(r.achieved)-24,T+34);
+  const leftRoom=X(P.retire)-L>180, ax=leftRoom?X(P.retire)-14:X(P.retire)+14, aanch=leftRoom?"end":"start";
+  s+=`<text x="${ax}" y="${cy}" text-anchor="${aanch}" font-size="13" font-weight="bold" fill="${GOLD}">Accumulated Corpus at ${P.retire}<tspan x="${ax}" dy="15">${fmt(r.achieved)}</tspan></text>`;
+  if(leftRoom) s+=line(X(P.retire)-11,cy+4,X(P.retire)-2,Y(r.achieved)-4,`stroke="${GOLD}" stroke-width="1" opacity="0.6"`);
+  // wedge label
+  if(yrsA>=12) s+=`<text x="${X(minA+yrsA*0.52)}" y="${Y(maxV*0.14)}" text-anchor="middle" font-size="11" fill="${GOLD}">Savings lots build the pyramid<tspan x="${X(minA+yrsA*0.52)}" dy="13">${P.racc}% return</tspan></text>`;
+  // burden label
+  if(yrsF>=12) s+=`<text x="${X(P.retire+yrsF*0.55)}" y="${Y(maxV*0.30)}" text-anchor="middle" font-size="11" fill="${PINK}">yearly expense burden<tspan x="${X(P.retire+yrsF*0.55)}" dy="13">the corpus must outrun</tspan></text>`;
+  // end of plan: cushion or depletion
+  if(!r.depleted){
+    const ly=Math.max(Y(r.leftover),T+58);
+    s+=`<circle cx="${X(maxA)}" cy="${Y(r.leftover)}" r="4.5" fill="${BLUE}" stroke="#fff" stroke-width="2"/>`;
+    s+=`<text x="${X(maxA)-8}" y="${ly-24}" text-anchor="end" font-size="12" font-weight="bold" fill="${BLUE}">${fmt(r.leftover)} remains at ${maxA}<tspan x="${X(maxA)-8}" dy="14" font-weight="normal">the cushion at the end</tspan></text>`;
+  } else {
+    s+=`<text x="${X(r.depleted)}" y="${Y(maxV*0.42)}" text-anchor="middle" font-size="12.5" font-weight="bold" fill="var(--red)">corpus depletes at ${r.depleted}</text>`;
+  }
+  // verdict badge (top right, above plot)
+  const btxt=`${ok?"ON TRACK":"GAP"} · ${pct}% FUNDED`;
+  const btw=btxt.length*7.4+26;
+  s+=`<rect x="${W-R-btw}" y="6" width="${btw}" height="24" rx="5" fill="${ok?GOLD:"var(--red)"}"/>`;
+  s+=`<text x="${W-R-btw/2}" y="22" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#fff">${btxt}</text>`;
+  // x axis
+  for(let a=Math.ceil(minA/10)*10;a<=maxA;a+=10){
+    s+=`<text x="${X(a)}" y="${H-16}" text-anchor="middle" font-size="10" fill="#4A5A50">${a}</text>`;}
+  s+=`<text x="${X(P.retire)}" y="${H-B+14}" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#4A5A50">RETIRE ${P.retire}</text>`;
+  s+=`<text x="${(L+W-R)/2}" y="${H-3}" text-anchor="middle" font-size="10" fill="#4A5A50">AGE</text>`;
+  document.getElementById("chart1").innerHTML=s;
+}
+function renderChart2(r){
+  const W=900,H=220,L=70,R=20,T=14,B=34;
+  const data=[]; for(let a=P.retire;a<P.endage;a++)data.push({age:a,v:retExpense(a)});
+  const maxV=Math.max(...data.map(d=>d.v),1)*1.1;
+  const X=a=>L+(a-P.retire)/(P.endage-P.retire)*(W-L-R), Y=v=>T+(1-v/maxV)*(H-T-B);
+  let s="";
+  for(let i=0;i<=3;i++){const v=maxV*i/3,y=Y(v);
+    s+=line(L,y,W-R,y,`stroke="#D8DED6" stroke-width="1"`);
+    s+=`<text x="${L-6}" y="${y+4}" text-anchor="end" font-size="10" fill="#4A5A50">${fmt(v)}</text>`;}
+  const bw=Math.max(2,(W-L-R)/(P.endage-P.retire)-2);
+  data.forEach(d=>{
+    s+=`<rect x="${X(d.age)}" y="${Y(d.v)}" width="${bw}" height="${H-B-Y(d.v)}" fill="var(--brass)" opacity="0.75"/>`;
+  });
+  for(let a=Math.ceil(P.retire/5)*5;a<=P.endage;a+=5){
+    s+=`<text x="${X(a)}" y="${H-12}" text-anchor="middle" font-size="10" fill="#4A5A50">${a}</text>`;}
+  s+=`<text x="${(L+W-R)/2}" y="${H-1}" text-anchor="middle" font-size="10" fill="#4A5A50">AGE</text>`;
+  document.getElementById("chart2").innerHTML=s;
+}
+
+// ---------- levers wiring ----------
+function bind(id,key,fmtFn){
+  const el=document.getElementById(id);
+  el.addEventListener("input",()=>{P[key]=parseFloat(el.value); recalc();});
+}
+["inf","racc","ratio","income","growth","medinf","annPct","annRate","fdPct","fdRate","eqRate","vol"].forEach(id=>bind(id,id));
+["retire","endage"].forEach(id=>{
+  const el=document.getElementById(id);
+  el.addEventListener("input",()=>{P[id]=parseFloat(el.value); renderTables(); recalc();});
+});
+document.getElementById("start").addEventListener("input",function(){
+  const ns=parseFloat(this.value);
+  for(const e of expenses){ if(e.atStart){ e.from=ns; if(e.def) e.def.from=ns; } }
+  for(const s of savings){ if(s.atStart){ s.from=ns; if(s.def) s.def.from=ns; } }
+  P.startAge=ns; renderTables(); recalc();
+});
+document.querySelectorAll("#infmode button").forEach(b=>{
+  b.addEventListener("click",()=>{
+    document.querySelectorAll("#infmode button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); P.infmode=b.dataset.v; recalc();
+  });
+});
+function showLevers(){
+  document.getElementById("v_income").textContent="₹"+P.income.toLocaleString("en-IN");
+  document.getElementById("v_start").textContent=P.startAge;
+  document.getElementById("v_inf").textContent=P.inf+"%";
+  document.getElementById("v_racc").textContent=P.racc+"%";
+  document.getElementById("v_growth").textContent=P.growth+"%";
+  document.getElementById("v_vol").textContent="±"+P.vol+"%";
+  document.getElementById("v_medinf").textContent=P.medinf+"%";
+  const fdEff=Math.min(P.fdPct,100-P.annPct), eqEff=Math.max(0,100-P.annPct-fdEff);
+  document.getElementById("v_annPct").textContent=P.annPct+"%";
+  document.getElementById("v_annRate").textContent=P.annRate+"%";
+  document.getElementById("v_fdPct").textContent=fdEff+"%";
+  document.getElementById("v_fdRate").textContent=P.fdRate+"%";
+  document.getElementById("v_eqPct").textContent=eqEff+"%";
+  document.getElementById("v_eqRate").textContent=P.eqRate+"%";
+  document.getElementById("v_ratio").textContent=P.ratio+"%";
+  document.getElementById("v_retire").textContent=P.retire;
+  document.getElementById("v_endage").textContent=P.endage;
+}
+function recalc(){
+  P.income=parseFloat(document.getElementById("income").value)||100;
+  if(P.retire<P.startAge){ P.retire=P.startAge; document.getElementById("retire").value=P.retire; }
+  clampRows();
+  syncAutoTranches();
+  showLevers();
+  const r=simulate();
+  renderVerdict(r); renderChart1(r); renderChart2(r);
+  lastMC=runMonteCarlo(1000); renderChart3(lastMC);
+}
+// ---- feedback (replace with your address — one line) ----
+const CONTACT_EMAIL = "sureshtumu4@gmail.com";
+function scenarioSummary(){
+  const r=simulate(), ok=r.achieved>=r.req;
+  return [
+    "MY SCENARIO",
+    `Income Rs ${P.income.toLocaleString("en-IN")}/mo · start ${P.startAge} · retire ${P.retire} · plan to ${P.endage}`,
+    `Inflation ${P.inf}% ${P.infmode} · salary growth ${P.growth}% · healthcare inf ${P.medinf}% · accumulation ${P.racc}%`,
+    `Buckets: annuity ${P.annPct}%@${P.annRate}% · FD ${Math.min(P.fdPct,100-P.annPct)}%@${P.fdRate}% · equity @${P.eqRate}% · expenses ${P.ratio}% · allocation ${allocTotal().toFixed(0)}%`,
+    `Corpus at ${P.retire}: ${fmt(r.achieved)} · required: ${fmt(r.req)} · ${ok?"ON TRACK":"GAP"} ${Math.round(r.achieved/Math.max(r.req,1)*100)}% funded`,
+    r.depleted ? `Depletes at ${r.depleted}` : `Leftover ${fmt(r.leftover)} at ${P.endage}`
+  ].join("\n");
+}
+function sendFeedback(){
+  const words=(document.getElementById("fbSubject").value||"feedback").trim();
+  const msg=(document.getElementById("fbMsg").value||"").trim();
+  const who=[(document.getElementById("fbName").value||"").trim(),(document.getElementById("fbEmail").value||"").trim()].filter(Boolean).join(" · ");
+  const attach=(document.getElementById("fbAttach").checked ? "\n\n"+scenarioSummary() : "") + (who?"\n\nFrom: "+who:"");
+  const subject=encodeURIComponent("Retirement Corpus App — "+words);
+  const body=encodeURIComponent(msg+attach+"\n\n—\nSent from the Retirement Corpus Calculator");
+  window.location.href=`mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+}
+document.getElementById("fbAlt").textContent="or email directly: "+CONTACT_EMAIL+' · subject starting "Retirement Corpus App — "';
+function downloadPDF(){
+  const r=simulate(), ok=r.achieved>=r.req, pct=Math.round(r.achieved/Math.max(r.req,1)*100);
+  document.getElementById("printHead").textContent =
+    `RETIREMENT CORPUS REPORT · ${new Date().toLocaleDateString('en-IN')} · income ₹${P.income.toLocaleString('en-IN')}/mo from age ${P.startAge} · retire ${P.retire} · plan to ${P.endage} · inflation ${P.inf}% ${P.infmode} · salary +${P.growth}% · acc ${P.racc}% · buckets A${P.annPct}/F${Math.min(P.fdPct,100-P.annPct)}/E · expenses ${P.ratio}% — ${ok?'ON TRACK':'GAP'} · ${pct}% funded · Monte Carlo ${lastMC?lastMC.successPct+"% survive":""}`;
+  window.print();   // choose "Save as PDF" as the destination
+}
+loadFromHash();
+renderTables(); recalc();
+window.addEventListener("hashchange",()=>{loadFromHash(); renderTables(); recalc();});
+</script>
+<!-- VISITOR STATS (page views only — user inputs are NEVER sent anywhere):
+     1. Create a free account at goatcounter.com, pick a code, e.g. "sureshtumu"
+     2. Replace MYCODE below with it and remove these comment markers.
+     3. Dashboard: https://MYCODE.goatcounter.com · Settings → Email reports → weekly to sureshtumu4@gmail.com
+<script data-goatcounter="https://MYCODE.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+-->
+</body>
+</html>
