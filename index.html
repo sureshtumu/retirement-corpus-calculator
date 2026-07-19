@@ -142,9 +142,21 @@ input[type=range]{min-height:26px;touch-action:pan-y}
     padding:7px 10px; letter-spacing:.3px;
   }
 }
+/* sticky verdict bar — appears when the main verdict scrolls out of view */
+.stickybar{position:fixed;top:0;left:0;right:0;z-index:120;display:none;
+  background:var(--ink);color:#fff;font-family:var(--mono);font-size:13px;
+  padding:8px 12px;text-align:center;letter-spacing:.3px;box-shadow:0 2px 10px rgba(0,0,0,.28)}
+.stickybar.show{display:block}
+.stickybar b{font-weight:700}
+.stickybar .ok{color:#8FD6AE}
+.stickybar .bad{color:#F2A08E}
+.stickybar .dim{color:#9DB0A5}
+@media (max-width:640px){.stickybar{font-size:11px;padding:7px 6px}}
+@media print{.stickybar{display:none !important}}
 </style>
 </head>
 <body>
+<div class="stickybar" id="stickyVerdict"></div>
 <div class="wrap">
 <div class="print-head" id="printHead"></div>
 <div id="sharedBanner"></div>
@@ -855,6 +867,7 @@ function recalc(){
   const r=simulate();
   renderVerdict(r); renderChart1(r); renderChart2(r);
   lastMC=runMonteCarlo(1000); renderChart3(lastMC);
+  updateStickyBar(r);
 }
 // ---- feedback (replace with your address — one line) ----
 const CONTACT_EMAIL = "sureshtumu4@gmail.com";
@@ -885,6 +898,26 @@ function downloadPDF(){
     `RETIREMENT CORPUS REPORT · ${new Date().toLocaleDateString('en-IN')} · income ₹${P.income.toLocaleString('en-IN')}/mo from age ${P.startAge} · retire ${P.retire} · plan to ${P.endage} · inflation ${P.inf}% ${P.infmode} · salary +${P.growth}% · acc ${P.racc}% · buckets A${P.annPct}/F${Math.min(P.fdPct,100-P.annPct)}/E · expenses ${P.ratio}% — ${ok?'ON TRACK':'GAP'} · ${pct}% funded · Monte Carlo ${lastMC?lastMC.successPct+"% survive":""}`;
   window.print();   // choose "Save as PDF" as the destination
 }
+function updateStickyBar(r){
+  const el=document.getElementById("stickyVerdict"); if(!el) return;
+  const ok=r.achieved>=r.req, pct=Math.min(999,Math.round(r.achieved/Math.max(r.req,1)*100));
+  el.innerHTML =
+    `<b class="${ok?"ok":"bad"}">${ok?"ON TRACK":"GAP"} · ${pct}% funded</b>`+
+    `<span class="dim"> · </span>${fmt(r.achieved)}<span class="dim"> vs ${fmt(r.req)} needed · </span>`+
+    (r.depleted?`<b class="bad">dry at ${r.depleted}</b>`:`leftover ${fmt(r.leftover)}`)+
+    (lastMC?`<span class="dim"> · MC </span><b class="${lastMC.successPct>=80?"ok":"bad"}">${lastMC.successPct}%</b>`:"");
+}
+(function(){
+  const target=document.getElementById("verdict"), bar=document.getElementById("stickyVerdict");
+  if(!target||!bar) return;
+  if("IntersectionObserver" in window){
+    new IntersectionObserver(en=>{
+      bar.classList.toggle("show", !en[0].isIntersecting);
+    },{rootMargin:"-10px 0px 0px 0px"}).observe(target);
+  } else {
+    window.addEventListener("scroll",()=>bar.classList.toggle("show", window.scrollY>420));
+  }
+})();
 loadFromHash();
 renderTables(); recalc();
 window.addEventListener("hashchange",()=>{loadFromHash(); renderTables(); recalc();});
