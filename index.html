@@ -191,7 +191,7 @@ input[type=range]{min-height:26px;touch-action:pan-y}
       </div>
       <div class="lever">
         <label>Inflation, per year <b id="v_inf"></b></label>
-        <input type="range" id="inf" min="2" max="10" step="0.5" value="6">
+        <input type="range" id="inf" min="2" max="10" step="0.5" value="7">
       </div>
       <div class="lever">
         <label>Inflation method</label>
@@ -223,12 +223,12 @@ input[type=range]{min-height:26px;touch-action:pan-y}
         <label style="margin-bottom:6px"><b style="font-family:var(--slab);font-size:13px">After retirement — corpus buckets</b></label>
         <label><span>Annuity — share <b id="v_annPct"></b></span><span>rate <b id="v_annRate"></b></span></label>
         <div class="brow">
-          <input type="range" id="annPct" class="grow" min="0" max="60" step="5" value="0">
+          <input type="range" id="annPct" class="grow" min="0" max="60" step="5" value="30">
           <input type="range" id="annRate" class="rmini" min="5.5" max="9" step="0.25" value="6.5" title="Annuity rate 5.5–9%">
         </div>
         <label style="margin-top:6px"><span>FD / Liquid — share <b id="v_fdPct"></b></span><span>rate <b id="v_fdRate"></b></span></label>
         <div class="brow">
-          <input type="range" id="fdPct" class="grow" min="0" max="100" step="5" value="100">
+          <input type="range" id="fdPct" class="grow" min="0" max="100" step="5" value="35">
           <input type="range" id="fdRate" class="rmini" min="5.5" max="12" step="0.5" value="7" title="FD/Liquid rate 5.5–12%">
         </div>
         <label style="margin-top:6px"><span>Equity / MF — remainder <b id="v_eqPct"></b></span><span>rate <b id="v_eqRate"></b></span></label>
@@ -236,7 +236,12 @@ input[type=range]{min-height:26px;touch-action:pan-y}
           <span class="grow" style="font-size:11px;color:var(--ink-soft)">gets whatever annuity &amp; FD don't take</span>
           <input type="range" id="eqRate" class="rmini" min="6" max="25" step="0.5" value="12" title="Equity/MF rate 6–25%">
         </div>
-        <label style="margin-top:2px"><span style="font-size:11px">Annuity principal is locked — pays income for life, passes to nominee. Withdrawals: FD first, equity last. FD 100% @ 7% reproduces the earlier single-rate view.</span></label>
+        <label style="margin-top:6px"><span>Cash cover held in FD <b id="v_cashYears"></b></span></label>
+        <div class="brow">
+          <span class="grow" style="font-size:11px;color:var(--ink-soft)">spend from FD; refill it from equity each year</span>
+          <input type="range" id="cashYears" class="rmini" min="0" max="7" step="1" value="3" title="Years of expenses kept liquid">
+        </div>
+        <label style="margin-top:2px"><span style="font-size:11px">Annuity principal is locked — pays income for life, passes to nominee. Each year you spend from FD, then top it back up to the cash-cover level by selling equity. Cash cover 0 = spend FD down fully before touching equity.</span></label>
       </div>
       <div class="lever">
         <label>Retirement expenses (of working-age level, cell O2) <b id="v_ratio"></b></label>
@@ -252,7 +257,7 @@ input[type=range]{min-height:26px;touch-action:pan-y}
       </div>
     </div>
     <div class="note panel" style="margin-top:14px">
-      <b>How it computes.</b> Income lots inflate each year by the index. Accumulation lots are monthly amounts (₹5/month → ₹60/year, as in your note), added yearly and compounded at the accumulation return until retirement. Required corpus is the amount at retirement that exactly funds each year's inflated retirement expense (expense ratio applied) with the remainder earning the post-retirement return, ending at zero at the plan-until age. Salary grows at its own rate; savings ride on the salary and the retirement lifestyle is anchored to the last-drawn salary, then inflates at price inflation (healthcare at its own rate). At retirement the corpus deploys into buckets: the annuity share is locked for life (income only, principal to nominee), and withdrawals come from FD first, equity last; the magic number is found by search — the smallest corpus that survives the plan under the same bucket policy, after pension or rent income. When a loan or goal with a year-slider ends before retirement, its freed share automatically flows into a matching "Freed when … ends" savings tranche from that very year — shorten an EMI and watch the corpus respond. Edit or Remove the freed tranche to redirect less than 100%. Under every category name the grey line shows the exact span the formula uses — by default Education Loan runs 15 yrs (25→40), House Loan EMI 30 yrs (25→55), Child Education &amp; Marriage 35 yrs (25→60) — and it updates the moment you change From / Till / retirement ages.
+      <b>How it computes.</b> Income lots inflate each year by the index. Accumulation lots are monthly amounts (₹5/month → ₹60/year, as in your note), added yearly and compounded at the accumulation return until retirement. Required corpus is the amount at retirement that exactly funds each year's inflated retirement expense (expense ratio applied) with the remainder earning the post-retirement return, ending at zero at the plan-until age. Salary grows at its own rate; savings ride on the salary and the retirement lifestyle is anchored to the last-drawn salary, then inflates at price inflation (healthcare at its own rate). At retirement the corpus deploys into buckets: the annuity share is locked for life (income only, principal to nominee), each retirement year is funded from the FD/liquid bucket, which is then topped back up to the cash-cover level by selling equity — so there is always ready cash and equity keeps working; the magic number is found by search — the smallest corpus that survives the plan under the same bucket policy, after pension or rent income. When a loan or goal with a year-slider ends before retirement, its freed share automatically flows into a matching "Freed when … ends" savings tranche from that very year — shorten an EMI and watch the corpus respond. Edit or Remove the freed tranche to redirect less than 100%. Under every category name the grey line shows the exact span the formula uses — by default Education Loan runs 15 yrs (25→40), House Loan EMI 30 yrs (25→55), Child Education &amp; Marriage 35 yrs (25→60) — and it updates the moment you change From / Till / retirement ages.
     </div>
   </div>
 
@@ -357,8 +362,8 @@ let savings = [
   {name:"Already Accumulated Corpus (lumpsum ₹)", amt:500000, from:25, kind:"lump", atStart:true},
   {name:"Base savings (from day one)", amt:15, from:25, atStart:true},
 ];
-let P = {income:100000, inf:6, infmode:"compound", growth:6, medinf:6, racc:10, vol:12,
-         annPct:0, annRate:6.5, fdPct:100, fdRate:7, eqRate:12,
+let P = {income:100000, inf:7, infmode:"compound", growth:6, medinf:6, racc:10, vol:12,
+         annPct:30, annRate:6.5, fdPct:35, fdRate:7, eqRate:12, cashYears:3,
          ratio:75, retire:60, endage:90, startAge:25};
 let incomes = [];   // retirement income streams: {name, amt(abs ₹/mo at retirement), from, till, inflating, active, custom}
 
@@ -415,7 +420,7 @@ function loadFromHash(){
     savings.length=0;  st.S.forEach(r=>savings.push(r));
     incomes.length=0;  (st.I||[]).forEach(r=>incomes.push(r));
     reattachDefs();
-    ["income","start","inf","growth","medinf","racc","vol","annPct","annRate","fdPct","fdRate","eqRate","ratio","retire","endage"].forEach(id=>{
+    ["income","start","inf","growth","medinf","racc","vol","annPct","annRate","fdPct","fdRate","eqRate","cashYears","ratio","retire","endage"].forEach(id=>{
       const el=document.getElementById(id); if(el && id in P) el.value=P[id];
       else if(el && id==="start") el.value=P.startAge;
     });
@@ -464,6 +469,14 @@ function retExpense(age){ // yearly: lifestyle anchored to last-drawn salary, th
   const base = 12 * mult(P.retire) * (P.ratio/100) * scale() * norm();
   return gen*base*infGrow(age,P.inf) + med*base*infGrow(age,P.medinf);
 }
+function netNeed(age, annIncome){   // what the corpus must actually fund this year
+  return Math.max(0, retExpense(age) - annIncome - streamIncome(age));
+}
+function cashTarget(age, annIncome){ // rupees to keep liquid: next N years of net need
+  let t=0;
+  for(let k=age+1; k<Math.min(age+1+P.cashYears, P.endage); k++) t += netNeed(k, annIncome);
+  return t;
+}
 function walkBuckets(C, wantTraj){   // deploy corpus into buckets at retirement and draw down
   const A = C*P.annPct/100;
   let d = C*Math.min(P.fdPct,100-P.annPct)/100;
@@ -477,6 +490,8 @@ function walkBuckets(C, wantTraj){   // deploy corpus into buckets at retirement
     if(need<=d) d-=need;
     else { let rem=need-d; d=0;
            if(rem<=e) e-=rem; else { e=0; if(dep===null) dep=age; } }
+    const tgt=cashTarget(age, annIncome);       // refill the cash bucket from equity
+    if(d<tgt){ const move=Math.min(tgt-d, e); d+=move; e-=move; }
     d*=1+P.fdRate/100; e*=1+P.eqRate/100;
     if(wantTraj) traj.push({age:age+1, v:Math.max(d+e,0), phase:"draw"});
   }
@@ -509,6 +524,8 @@ function runMonteCarlo(N){
       let need=retExpense(age)-annIncome-streamIncome(age);
       if(need<0){d+=-need;need=0;}
       if(need<=d)d-=need; else{let rem=need-d;d=0; if(rem<=e)e-=rem; else{e=0; if(dep===null)dep=age;}}
+      const tgt=cashTarget(age, annIncome);
+      if(d<tgt){ const move=Math.min(tgt-d, e); d+=move; e-=move; }
       d*=1+P.fdRate/100; e*=1+(P.eqRate/100+sig*gauss());
       wealth.push(Math.max(d+e,0));
     }
@@ -828,7 +845,7 @@ function bind(id,key,fmtFn){
   const el=document.getElementById(id);
   el.addEventListener("input",()=>{P[key]=parseFloat(el.value); recalc();});
 }
-["inf","racc","ratio","income","growth","medinf","annPct","annRate","fdPct","fdRate","eqRate","vol"].forEach(id=>bind(id,id));
+["inf","racc","ratio","income","growth","medinf","annPct","annRate","fdPct","fdRate","eqRate","vol","cashYears"].forEach(id=>bind(id,id));
 ["retire","endage"].forEach(id=>{
   const el=document.getElementById(id);
   el.addEventListener("input",()=>{P[id]=parseFloat(el.value); renderTables(); recalc();});
@@ -860,6 +877,7 @@ function showLevers(){
   document.getElementById("v_fdRate").textContent=P.fdRate+"%";
   document.getElementById("v_eqPct").textContent=eqEff+"%";
   document.getElementById("v_eqRate").textContent=P.eqRate+"%";
+  document.getElementById("v_cashYears").textContent=P.cashYears===0?"off":P.cashYears+" yrs";
   document.getElementById("v_ratio").textContent=P.ratio+"%";
   document.getElementById("v_retire").textContent=P.retire;
   document.getElementById("v_endage").textContent=P.endage;
@@ -883,7 +901,7 @@ function scenarioSummary(){
     "MY SCENARIO",
     `Income Rs ${P.income.toLocaleString("en-IN")}/mo · start ${P.startAge} · retire ${P.retire} · plan to ${P.endage}`,
     `Inflation ${P.inf}% ${P.infmode} · salary growth ${P.growth}% · healthcare inf ${P.medinf}% · accumulation ${P.racc}%`,
-    `Buckets: annuity ${P.annPct}%@${P.annRate}% · FD ${Math.min(P.fdPct,100-P.annPct)}%@${P.fdRate}% · equity @${P.eqRate}% · expenses ${P.ratio}% · allocation ${allocTotal().toFixed(0)}%`,
+    `Buckets: annuity ${P.annPct}%@${P.annRate}% · FD ${Math.min(P.fdPct,100-P.annPct)}%@${P.fdRate}% · equity @${P.eqRate}% · cash cover ${P.cashYears} yrs · expenses ${P.ratio}% · allocation ${allocTotal().toFixed(0)}%`,
     `Corpus at ${P.retire}: ${fmt(r.achieved)} · required: ${fmt(r.req)} · ${ok?"ON TRACK":"GAP"} ${Math.round(r.achieved/Math.max(r.req,1)*100)}% funded`,
     r.depleted ? `Depletes at ${r.depleted}` : `Leftover ${fmt(r.leftover)} at ${P.endage}`
   ].join("\n");
