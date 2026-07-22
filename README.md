@@ -21,12 +21,13 @@ This is an educational what-if illustration, not investment advice. Consult a fi
 
 ## 2. Quick start
 
-Open the file. The defaults describe someone starting at 25 on ₹1,00,000/month: 6% compound inflation, 6% salary growth, 10% accumulation return, retirement at 60 with 75% of final-salary lifestyle to age 90, corpus parked 100% in FD at 7%, and ₹5,00,000 already in hand. This opens ON TRACK at ~118% funded — but watch the Monte Carlo chip: only ~58% of simulated lives survive, the tool's first honest lesson.
+Open the file. The defaults describe someone starting at 25 on ₹1,00,000/month: 7% compound inflation, 6% salary growth, 10% accumulation return, retirement at 60 with 75% of final-salary lifestyle to age 90, the corpus split across annuity 30% @6.5%, FD/liquid 35% @7% and equity 35% @12% with 3 years of expenses kept as cash cover, and ₹5,00,000 already in hand. This opens ON TRACK at ~140% funded, with ~68% of simulated lives surviving in the Monte Carlo panel.
 
 Five things to try first:
 - **Starting age** 22 vs 30 — three years either side is a sea change (142% vs 85% funded; the late starter runs dry at 84).
 - **House Loan EMI year-slider** 30 → 20 — the freed EMI auto-invests and the corpus jumps by over a crore, live.
-- **Corpus buckets** — move a third into annuity and a third into equity and watch the magic number fall.
+- **Corpus buckets** — slide FD to 100% (no annuity, no equity) and watch the magic number climb from ₹9.0 Cr to ₹12.0 Cr, and Monte Carlo survival fall from 68% to 46%.
+- **Cash cover** 0 → 7 years — safety has a price: more years parked in FD raises the magic number from ₹8.4 Cr to ₹10.1 Cr.
 - **Healthcare inflation** at 12% — the India-specific warning, quantified.
 - **Salary growth** at 10% — earning more doesn't save a plan whose lifestyle rides the salary.
 
@@ -42,7 +43,7 @@ All category amounts are **percentages of income** (the "20 lots of ₹5 on ₹1
 
 **Auto-linked freed money.** Each year-slider category (Education Loan, Child Education & Marriage, House EMI, Vehicle) owns a "Freed when … ends" savings tranche: its start age always equals the loan's end, its % mirrors the loan's. Shorten the loan and the corpus responds instantly. Edit the tranche's % to redirect less than 100%; Remove it to spend the freed money; Restore re-links.
 
-**Post-retirement buckets (the Indian reality).** At retirement the corpus deploys into three buckets: **Annuity** (share 0–60%, rate 5.5–9%) whose principal is *locked for life* — it pays a level income and passes to the nominee, shown separately in the verdict; **FD/Liquid** (rate 5.5–12%); and **Equity/MF** (the remainder, rate 6–25%). Withdrawals follow the bucket strategy — FD first, equity last; surplus income parks back into FD. **The Magic Number is found by search**: the smallest corpus that survives to the plan-until age under this same policy, after pension/rent income.
+**Post-retirement buckets (the Indian reality).** At retirement the corpus deploys into three buckets: **Annuity** (share 0–60%, rate 5.5–9%) whose principal is *locked for life* — it pays a level income and passes to the nominee, shown separately in the verdict; **FD/Liquid** (rate 5.5–12%); and **Equity/MF** (the remainder, rate 6–25%). Each retirement year is funded from the FD/liquid bucket, which is then topped back up to the **cash cover** level (0–7 years of expenses, default 3) by selling equity — so ready cash is always on hand while the rest keeps compounding. Surplus income parks back into FD. **The Magic Number is found by search**: the smallest corpus that survives to the plan-until age under this same policy, after pension/rent income.
 
 **Retirement income streams.** Pension, rent, royalties: ₹/month at retirement, from/till ages, and an "inflates?" flag (rent yes, fixed annuity/pension no). These reduce the magic number directly; if income fully covers expenses, the verdict says so.
 
@@ -68,7 +69,7 @@ One HTML file, three zones. **CSS** at top: the palette is six variables in `:ro
 
 Common enhancements: change defaults (edit row arrays *and* matching HTML `value=` attributes); add a category (append a row object — `slider:true, years:N` auto-creates its freed tranche); add a lever (copy a `.lever` block, add its id to the bind list); new ideas welcome via the feedback form. The engine is DOM-light by design — it can be smoke-tested in Node by stubbing `document` and calling `simulate()` directly; keep new logic in engine functions, not render strings.
 
-**Visitor stats:** a commented GoatCounter block sits in the `<head>` — register free at goatcounter.com, replace the site code, uncomment. It counts visits only; it can email a periodic report, and it never sees the numbers users type.
+**Visitor stats:** a GoatCounter snippet sits just before `</body>`. It counts page views only — it never sees the numbers users type — and can email a periodic report.
 
 ## 6. Honest limits
 
