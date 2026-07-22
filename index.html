@@ -153,6 +153,12 @@ input[type=range]{min-height:26px;touch-action:pan-y}
 .stickybar .dim{color:#9DB0A5}
 @media (max-width:640px){.stickybar{font-size:11px;padding:7px 6px}}
 @media print{.stickybar{display:none !important}}
+/* freeze the full verdict pane while the rest scrolls (desktop/tablet only) */
+@media (min-width: 641px){
+  .verdict{position:sticky;top:0;z-index:110;background:var(--paper);
+    padding:10px 0 12px;margin:10px 0 22px;
+    box-shadow:0 8px 10px -8px rgba(0,0,0,.22)}
+}
 </style>
 </head>
 <body>
