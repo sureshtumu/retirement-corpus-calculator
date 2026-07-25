@@ -21,7 +21,7 @@ This is an educational what-if illustration, not investment advice. Consult a fi
 
 ## 2. Quick start
 
-Open the file. The defaults describe someone starting at 25 on ₹1,00,000/month: 7% compound inflation, 6% salary growth, 10% accumulation return, retirement at 60 with 75% of final-salary lifestyle to age 90, the corpus split across annuity 30% @6.5%, FD/liquid 35% @7% and equity 35% @12% with 3 years of expenses kept as cash cover, and ₹5,00,000 already in hand. This opens ON TRACK at ~140% funded, with ~68% of simulated lives surviving in the Monte Carlo panel.
+Open the file. The defaults describe someone starting at 25 on ₹1,00,000/month: 7% compound inflation, 6% salary growth, 10% accumulation return, retirement at 60 with 75% of final-salary lifestyle to age 90, the corpus split across annuity 30% @6.5%, FD/liquid 35% @7% and equity 35% @12% with 3 years of expenses kept as cash cover, and ₹5,00,000 already in hand. Loans start a few years in and run realistic spans (education 5 yrs from age +1, child education 15 yrs from +3, house EMI 20 yrs from +5, vehicle 10 yrs from +3), so their freed EMIs flow into savings early. This opens ON TRACK at ~181% funded, with ~89% of simulated lives surviving in the Monte Carlo panel.
 
 Five things to try first:
 - **Starting age** 22 vs 30 — three years either side is a sea change (142% vs 85% funded; the late starter runs dry at 84).
@@ -41,7 +41,7 @@ All category amounts are **percentages of income** (the "20 lots of ₹5 on ₹1
 
 **Accumulation.** Yearly: `corpus = (corpus + lumpsums landing this year) × (1 + return) + monthly savings × 12 × salary-index × normalization`. The lumpsum ("Already Accumulated Corpus") is absolute rupees — it neither scales with income nor inflates, and compounds from the year it lands, even if that is the retirement year itself (a 55- or 60-year-old starter is fully supported).
 
-**Auto-linked freed money.** Each year-slider category (Education Loan, Child Education & Marriage, House EMI, Vehicle) owns a "Freed when … ends" savings tranche: its start age always equals the loan's end, its % mirrors the loan's. Shorten the loan and the corpus responds instantly. Edit the tranche's % to redirect less than 100%; Remove it to spend the freed money; Restore re-links.
+**Auto-linked freed money.** Each year-slider category (Education Loan, Child Education & Marriage, House EMI, Vehicle) begins a set number of years after the starting age — a `startOffset` — and runs for its own span, then hands its freed % to a matching "Freed when … ends" savings tranche that starts exactly at the loan's end. Shorten the loan or move the starting age and both the loan and its freed tranche shift instantly. Edit the tranche's % to redirect less than 100%; Remove it to spend the freed money; Restore re-links.
 
 **Post-retirement buckets (the Indian reality).** At retirement the corpus deploys into three buckets: **Annuity** (share 0–60%, rate 5.5–9%) whose principal is *locked for life* — it pays a level income and passes to the nominee, shown separately in the verdict; **FD/Liquid** (rate 5.5–12%); and **Equity/MF** (the remainder, rate 6–25%). Each retirement year is funded from the FD/liquid bucket, which is then topped back up to the **cash cover** level (0–7 years of expenses, default 3) by selling equity — so ready cash is always on hand while the rest keeps compounding. Surplus income parks back into FD. **The Magic Number is found by search**: the smallest corpus that survives to the plan-until age under this same policy, after pension/rent income.
 
@@ -53,7 +53,7 @@ All category amounts are **percentages of income** (the "20 lots of ₹5 on ₹1
 
 **Levers:** monthly income at start · starting age 18–60 · inflation % + simple/compound · salary growth % · healthcare inflation % · accumulation return % · volatility σ · corpus buckets (annuity share+rate, FD share+rate, equity rate) · retirement expense ratio % · retirement age (auto-clamps ≥ start) · plan-until age.
 
-**Expense rows:** % of income, from/till ages *or* a year-slider (capped at retirement − start; stored years survive slider round-trips), "in retirement till" age (0 = stops). Rows marked "at start" follow the starting-age slider; typing a from-age makes a row absolute.
+**Expense rows:** % of income, from/till ages *or* a year-slider (capped at retirement − the row's own start; stored years survive slider round-trips), "in retirement till" age (0 = stops). Rows marked "at start" follow the starting-age slider; loan rows carry a `startOffset` so they begin a few years in (shown as "at start +N") and shift with the slider; typing a from-age makes a row absolute.
 
 **Accumulation rows:** the lumpsum (absolute ₹, editable landing age — also models future windfalls), base savings %, auto-linked freed tranches.
 
@@ -65,7 +65,7 @@ All category amounts are **percentages of income** (the "20 lots of ₹5 on ₹1
 
 ## 5. For contributors — where things live
 
-One HTML file, three zones. **CSS** at top: the palette is six variables in `:root`; `.mini`/`.rmini`, `.spanline`, print styles. **State**: `expenses[]`, `savings[]`, `incomes[]`, and `P` (all levers). Row flags: `atStart`, `slider`+`years`, `kind:"lump"`, `auto`+`link`, `med`, `custom`, `active`, `overridden`, `def` (Restore snapshot). **Engine**: `mult` (salary index), `infGrow`, `retExpense`, `walkBuckets`, `requiredCorpus` (binary search), `runMonteCarlo` (mulberry32-seeded), `simulate`, `syncAutoTranches`, `norm`. **Rendering**: `renderTables`, `renderVerdict`, `renderChart1/2/3`, with `recalc()` as the single heartbeat. Share links live in `shareState`/`copyShareLink`/`loadFromHash`.
+One HTML file, three zones. **CSS** at top: the palette is six variables in `:root`; `.mini`/`.rmini`, `.spanline`, print styles. **State**: `expenses[]`, `savings[]`, `incomes[]`, and `P` (all levers). Row flags: `atStart`, `slider`+`years`+`startOffset`, `kind:"lump"`, `auto`+`link`, `med`, `custom`, `active`, `overridden`, `def` (Restore snapshot). **Engine**: `mult` (salary index), `infGrow`, `retExpense`, `walkBuckets`, `requiredCorpus` (binary search), `runMonteCarlo` (mulberry32-seeded), `simulate`, `syncAutoTranches`, `norm`. **Rendering**: `renderTables`, `renderVerdict`, `renderChart1/2/3`, with `recalc()` as the single heartbeat. Share links live in `shareState`/`copyShareLink`/`loadFromHash`.
 
 Common enhancements: change defaults (edit row arrays *and* matching HTML `value=` attributes); add a category (append a row object — `slider:true, years:N` auto-creates its freed tranche); add a lever (copy a `.lever` block, add its id to the bind list); new ideas welcome via the feedback form. The engine is DOM-light by design — it can be smoke-tested in Node by stubbing `document` and calling `simulate()` directly; keep new logic in engine functions, not render strings.
 
@@ -76,4 +76,4 @@ Common enhancements: change defaults (edit row arrays *and* matching HTML `value
 Yearly steps; contributions at year-end, lumpsums at year-start; ages are integers. Working-year expense spans affect the corpus only through their freed tranches — by design, matching the original Excel. The expense ratio applies uniformly to continuing categories. Monte Carlo randomizes market returns only (salary and inflation stay deterministic), with independent yearly draws — real markets have fat tails and momentum this doesn't capture. No tax modeling, deliberately. Nothing here is a return guarantee.
 
 ---
-*Version: July 2026 — percentage ledger · duration sliders · auto-linked freed EMIs · lumpsum & late-starter support · salary step-up · healthcare inflation · annuity/FD/equity buckets · income streams · share links · Monte Carlo · PDF report · feedback form.*
+*Version: July 2026 — percentage ledger · duration sliders with realistic loan start-offsets · auto-linked freed EMIs · lumpsum & late-starter support · salary step-up · healthcare inflation · annuity/FD/equity buckets · cash-cover replenishment · income streams · share links · Monte Carlo · PDF report · feedback form.*
