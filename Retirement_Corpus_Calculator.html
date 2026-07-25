@@ -228,13 +228,13 @@ input[type=range]{min-height:26px;touch-action:pan-y}
         </div>
         <label style="margin-top:6px"><span>FD / Liquid — share <b id="v_fdPct"></b></span><span>rate <b id="v_fdRate"></b></span></label>
         <div class="brow">
-          <input type="range" id="fdPct" class="grow" min="0" max="100" step="5" value="35">
+          <input type="range" id="fdPct" class="grow" min="0" max="100" step="5" value="50">
           <input type="range" id="fdRate" class="rmini" min="5.5" max="12" step="0.5" value="7" title="FD/Liquid rate 5.5–12%">
         </div>
         <label style="margin-top:6px"><span>Equity / MF — remainder <b id="v_eqPct"></b></span><span>rate <b id="v_eqRate"></b></span></label>
         <div class="brow">
           <span class="grow" style="font-size:11px;color:var(--ink-soft)">gets whatever annuity &amp; FD don't take</span>
-          <input type="range" id="eqRate" class="rmini" min="6" max="25" step="0.5" value="12" title="Equity/MF rate 6–25%">
+          <input type="range" id="eqRate" class="rmini" min="6" max="25" step="0.5" value="10" title="Equity/MF rate 6–25%">
         </div>
         <label style="margin-top:6px"><span>Cash cover held in FD <b id="v_cashYears"></b></span></label>
         <div class="brow">
@@ -245,7 +245,7 @@ input[type=range]{min-height:26px;touch-action:pan-y}
       </div>
       <div class="lever">
         <label>Retirement expenses (of working-age level, cell O2) <b id="v_ratio"></b></label>
-        <input type="range" id="ratio" min="30" max="100" step="5" value="75">
+        <input type="range" id="ratio" min="30" max="100" step="1" value="96">
       </div>
       <div class="lever">
         <label>Retirement age <b id="v_retire"></b></label>
@@ -350,11 +350,11 @@ input[type=range]{min-height:26px;touch-action:pan-y}
 let expenses = [
   {name:"Tax",                         amt:25, from:25, till:100, ret:100, atStart:true},
   {name:"House Expense",               amt:20, from:25, till:100, ret:100, atStart:true},
-  {name:"Education Loan",              amt:5,  from:25, till:40,  ret:0, atStart:true, slider:true, years:15},
-  {name:"Child Education & Marriage",  amt:5,  from:25, till:55,  ret:0, atStart:true, slider:true, years:30},
-  {name:"House Loan EMI",              amt:10, from:25, till:55,  ret:0, atStart:true, slider:true, years:30},
+  {name:"Education Loan",              amt:5,  from:26, till:31,  ret:0, slider:true, years:5,  startOffset:1},
+  {name:"Child Education & Marriage",  amt:5,  from:28, till:43,  ret:0, slider:true, years:15, startOffset:3},
+  {name:"House Loan EMI",              amt:10, from:30, till:50,  ret:0, slider:true, years:20, startOffset:5},
   {name:"Going Places",                amt:5,  from:25, till:60,  ret:80, atStart:true},
-  {name:"Vehicle EMI / Electronics / Other", amt:5, from:25, till:60, ret:90, atStart:true, slider:true, years:35},
+  {name:"Vehicle EMI / Electronics / Other", amt:5, from:28, till:38, ret:90, slider:true, years:10, startOffset:3},
   {name:"Health Insurance",            amt:5,  from:25, till:100, ret:100, atStart:true, med:true},
   {name:"Term / Auto / Property Insurance", amt:5, from:25, till:60, ret:0, atStart:true},
 ];
@@ -363,8 +363,8 @@ let savings = [
   {name:"Base savings (from day one)", amt:15, from:25, atStart:true},
 ];
 let P = {income:100000, inf:7, infmode:"compound", growth:6, medinf:6, racc:10, vol:12,
-         annPct:30, annRate:6.5, fdPct:35, fdRate:7, eqRate:12, cashYears:3,
-         ratio:75, retire:60, endage:90, startAge:25};
+         annPct:30, annRate:6.5, fdPct:50, fdRate:7, eqRate:10, cashYears:3,
+         ratio:96, retire:60, endage:90, startAge:25};
 let incomes = [];   // retirement income streams: {name, amt(abs ₹/mo at retirement), from, till, inflating, active, custom}
 
 // snapshot each row's default values so a removed row can be restored
@@ -629,10 +629,10 @@ function renderTables(){
   eb.innerHTML = expenses.map((e,i)=>{
     const a=e.active!==false, v=k=>a?e[k]:0;
     const fromCell = e.slider
-      ? `<span class="lots">at start</span>`
+      ? `<span class="lots">${(e.startOffset||0)>0?"at start +"+e.startOffset:"at start"}</span>`
       : `<input type="number" value="${v('from')}" min="18" max="100" ${dis(a)} onchange="upd('e',${i},'from',this.value)">`;
     const tillCell = e.slider
-      ? `<input type="range" class="mini" min="0" max="${Math.max(0,P.retire-P.startAge)}" step="1" value="${a?effYears(e):0}" ${dis(a)} oninput="updYears('e',${i},this.value)"><span class="yl" id="yl-e${i}">${a?effYears(e):0} yrs</span>`
+      ? `<input type="range" class="mini" min="0" max="${Math.max(0,P.retire-(P.startAge+(e.startOffset||0)))}" step="1" value="${a?effYears(e):0}" ${dis(a)} oninput="updYears('e',${i},this.value)"><span class="yl" id="yl-e${i}">${a?effYears(e):0} yrs</span>`
       : `<input type="number" value="${v('till')}" min="18" max="100" ${dis(a)} onchange="upd('e',${i},'till',this.value)">`;
     return `<tr class="${a?'':'inactive'}">
     <td><input type="text" value="${e.name.replace(/"/g,'&quot;')}" ${dis(a)} onchange="expenses[${i}].name=this.value"><div class="spanline" id="sp-e${i}">${a?spanTextE(e):"—"}</div></td>
@@ -695,18 +695,19 @@ function upd(t,i,k,v){ const row=rowsOf(t)[i]; row[k]=parseFloat(v)||0; if(k==='
 function updYears(t,i,v){
   const row=expenses[i];
   row.years=Math.max(0,parseInt(v)||0);
-  row.till=P.startAge+effYears(row);
+  row.till=row.from+effYears(row);
   const yl=document.getElementById(`yl-e${i}`); if(yl) yl.textContent=effYears(row)+" yrs";
   const sp=document.getElementById(`sp-e${i}`); if(sp) sp.textContent=spanTextE(row);
   recalc();   // syncAutoTranches inside recalc refreshes the linked tranche's from-age and spanline in place
 }
-function effYears(e){ return Math.min(e.years, Math.max(0,P.retire-P.startAge)); }
+function effYears(e){ const off=e.startOffset||0; return Math.min(e.years, Math.max(0,P.retire-(P.startAge+off))); }
 function clampRows(){
   for(const e of expenses){
     if(!e.slider) continue;
-    e.from=P.startAge;
-    e.till=P.startAge+effYears(e);
-    if(e.def) e.def.from=P.startAge;
+    const off=e.startOffset||0;
+    e.from=Math.min(P.startAge+off, P.retire);
+    e.till=Math.min(e.from+effYears(e), P.retire);
+    if(e.def) e.def.from=e.from;
   }
 }
 function deactivate(t,i){ const row=rowsOf(t)[i]; row.active=false; if(row.auto) row.overridden=true; renderTables(); recalc(); }
@@ -852,7 +853,10 @@ function bind(id,key,fmtFn){
 });
 document.getElementById("start").addEventListener("input",function(){
   const ns=parseFloat(this.value);
-  for(const e of expenses){ if(e.atStart){ e.from=ns; if(e.def) e.def.from=ns; } }
+  for(const e of expenses){
+    if(e.slider){ e.from=Math.min(ns+(e.startOffset||0), P.retire); if(e.def) e.def.from=e.from; }
+    else if(e.atStart){ e.from=ns; if(e.def) e.def.from=ns; }
+  }
   for(const s of savings){ if(s.atStart){ s.from=ns; if(s.def) s.def.from=ns; } }
   P.startAge=ns; renderTables(); recalc();
 });
