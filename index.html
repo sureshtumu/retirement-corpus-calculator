@@ -105,6 +105,8 @@ input[type=range]{min-height:26px;touch-action:pan-y}
 .fb-share:hover{background:#1e3550}
 .shared-banner{background:var(--green-soft);border:1px solid var(--green);padding:9px 14px;margin:12px 0;font-size:13px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
 .mc-chip{display:inline-block;font-family:var(--mono);font-weight:600;font-size:13px;padding:4px 12px;border-radius:4px;margin-left:8px}
+.resetbtn{border:1px solid var(--brass);background:#fff;color:var(--brass);font-family:var(--mono);font-size:12px;padding:7px 14px;cursor:pointer;white-space:nowrap;margin-right:8px}
+.resetbtn:hover{background:var(--brass);color:#fff}
 .pdfbtn{border:1px solid var(--ink);background:var(--ink);color:#fff;font-family:var(--mono);font-size:12px;padding:7px 14px;cursor:pointer;white-space:nowrap}
 .pdfbtn:hover{background:#33413a}
 .print-head{display:none}
@@ -113,7 +115,7 @@ input[type=range]{min-height:26px;touch-action:pan-y}
   .wrap{max-width:100%;padding:0}
   .grid{display:block}
   .panel,.chartbox,.vcard,.feedback{border:1px solid #bbb;box-shadow:none;break-inside:avoid}
-  .feedback,.addrow,.del,.restore,.kill,.fb-send,.pdfbtn,.lever input[type=range],.mini,.toggle{display:none !important}
+  .feedback,.addrow,.del,.restore,.kill,.fb-send,.pdfbtn,.resetbtn,.lever input[type=range],.mini,.toggle{display:none !important}
   .lever{margin-bottom:6px}
   .chartbox{margin-top:12px}
   .print-head{display:block;font-family:var(--mono);font-size:11px;color:#333;border-bottom:2px solid #333;padding-bottom:6px;margin-bottom:10px}
@@ -159,6 +161,24 @@ input[type=range]{min-height:26px;touch-action:pan-y}
     padding:10px 0 12px;margin:10px 0 22px;
     box-shadow:0 8px 10px -8px rgba(0,0,0,.22)}
 }
+.loanrow{border:1px solid var(--line);padding:9px 11px;margin-bottom:8px;background:#fff}
+.loanrow .lh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.loanrow .lname{font-family:var(--slab);font-size:13px;font-weight:600}
+.loanrow .lamt{font-family:var(--mono);font-size:13px;color:var(--brass);font-weight:700}
+.loanrow .lsub{font-family:var(--mono);font-size:10.5px;color:var(--ink-soft);margin-top:3px}
+.loanrow input[type=range].grow{width:100%}
+.lmini-row{display:flex;gap:10px;align-items:center;margin-top:5px}
+.lmini-row label{font-size:10.5px;color:var(--ink-soft);white-space:nowrap}
+.lmini-row input[type=range]{flex:1;accent-color:var(--brass)}
+.meter{height:26px;border-radius:4px;background:var(--line);position:relative;overflow:hidden;font-family:var(--mono);font-size:11px}
+.meter .fill{height:100%;transition:width .2s,background .2s}
+.meter .lbl{position:absolute;top:0;left:0;right:0;height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink);font-weight:600;z-index:2}
+.meter .ceil{position:absolute;top:0;bottom:0;width:2px;background:var(--red);z-index:3}
+.story-line{background:var(--brass-soft,#F4E9CF);border-left:3px solid var(--brass);padding:7px 11px;font-size:12px;font-family:var(--mono);color:#6b5320}
+.goalrow{display:flex;gap:8px;align-items:center;margin-bottom:6px;font-size:12px}
+.goalrow input[type=range]{flex:1;accent-color:var(--green)}
+.goalrow .gname{width:120px;font-weight:600}
+.goalrow .gval{width:130px;font-family:var(--mono);font-size:11px;color:var(--ink-soft);text-align:right}
 </style>
 </head>
 <body>
@@ -169,7 +189,7 @@ input[type=range]{min-height:26px;touch-action:pan-y}
 <header>
   <div class="eyebrow" style="display:flex;justify-content:space-between;align-items:center;gap:10px">
     <span>Life Expense Pyramid · Accumulate → Retire → Fund Life</span>
-    <button class="pdfbtn" onclick="downloadPDF()">⬇ Download PDF report</button>
+    <button class="resetbtn" onclick="resetDefaults()" title="Discard all your changes and return to the starting figures">↺ Reset to default figures</button><button class="pdfbtn" onclick="downloadPDF()">⬇ Download PDF report</button>
   </div>
   <h1>Retirement Corpus — The Magic Number</h1>
   <p>Every rupee of income at your starting age is split into expense and accumulation lots. Lots inflate with a flat index; accumulation compounds until retirement; the corpus then funds retirement expenses. Change any number — everything recalculates instantly.</p>
@@ -262,8 +282,20 @@ input[type=range]{min-height:26px;touch-action:pan-y}
   </div>
 
   <div>
+    <div class="panel" style="border-top:3px solid var(--brass)">
+      <h2><span class="section-tag" style="background:var(--brass)">Loans</span> &nbsp;Borrowings in rupees — the affordability engine</h2>
+      <div class="cap" style="margin-bottom:10px">Slide each loan in rupees. The tool keeps your total EMIs under a tax-aware debt ceiling, step-ups the home loan while education runs, and channels freed EMIs into equity as loans close.</div>
+      <div id="debtMeter" style="margin-bottom:12px"></div>
+      <div id="loanRows"></div>
+      <div id="loanStory" style="margin-top:10px"></div>
+      <h3 style="font-family:var(--slab);font-size:14px;margin:16px 0 6px">Children — funded as savings goals, not loans</h3>
+      <div class="cap" style="margin-bottom:8px">Start early and these cost very little — a fraction of income per month.</div>
+      <div id="goalRows"></div>
+    </div>
+
     <div class="panel">
-      <h2><span class="section-tag">Expense</span> &nbsp;Lots — where the money goes</h2>
+      <h2><span class="section-tag">Expense</span> &nbsp;Where the money goes — % of income</h2>
+      <div id="allocBanner" style="font-family:var(--mono);font-size:11.5px;margin-bottom:8px"></div>
       <div class="tscroll"><table id="expTable">
         <thead><tr>
           <th>Category</th><th>% of income</th><th>From age</th><th>Till age / years</th><th>In retirement till</th><th></th>
@@ -272,7 +304,7 @@ input[type=range]{min-height:26px;touch-action:pan-y}
       </table></div>
       <button class="addrow" onclick="addExpense()">+ Add expense category</button>
 
-      <h2 style="margin-top:22px"><span class="section-tag" style="background:var(--green)">Accumulation</span> &nbsp;Lots — what builds the corpus</h2>
+      <h2 style="margin-top:22px"><span class="section-tag" style="background:var(--green)">Accumulation</span> &nbsp;What builds the corpus — % of income</h2>
       <div class="tscroll"><table id="savTable">
         <thead><tr>
           <th>Tranche (e.g. after a loan ends)</th><th>% of income (lumpsum in ₹)</th><th>From age</th><th></th>
@@ -348,16 +380,25 @@ input[type=range]{min-height:26px;touch-action:pan-y}
 <script>
 // ---------- state (defaults transcribed from the Excel) ----------
 let expenses = [
-  {name:"Tax",                         amt:25, from:25, till:100, ret:100, atStart:true},
-  {name:"House Expense",               amt:20, from:25, till:100, ret:100, atStart:true},
-  {name:"Education Loan",              amt:5,  from:26, till:31,  ret:0, slider:true, years:5,  startOffset:1},
-  {name:"Child Education & Marriage",  amt:5,  from:28, till:43,  ret:0, slider:true, years:15, startOffset:3},
-  {name:"House Loan EMI",              amt:10, from:30, till:50,  ret:0, slider:true, years:20, startOffset:5},
-  {name:"Going Places",                amt:5,  from:25, till:60,  ret:80, atStart:true},
-  {name:"Vehicle EMI / Electronics / Other", amt:5, from:28, till:38, ret:90, slider:true, years:10, startOffset:3},
-  {name:"Health Insurance",            amt:5,  from:25, till:100, ret:100, atStart:true, med:true},
-  {name:"Term / Auto / Property Insurance", amt:5, from:25, till:60, ret:0, atStart:true},
+  {name:"Income Tax (computed, new regime)", amt:0, from:25, till:100, ret:0, atStart:true, computed:"tax"},
+  {name:"House / Living Expense",        amt:40, from:25, till:100, ret:100, atStart:true, lifestyle:true},
+  {name:"Going Places",                  amt:5,  from:25, till:60,  ret:80, atStart:true, discretionary:true},
+  {name:"Health Insurance",              amt:5,  from:25, till:100, ret:100, atStart:true, med:true, flatMonthly:2000},
+  {name:"Term / Property Insurance",     amt:5,  from:25, till:60,  ret:0, atStart:true, flatMonthly:1250},
 ];
+// v2: loans are absolute rupees (not % rows). EMIs computed by amortization, expressed as % of
+// current-year salary, and enforced under a 30% total-debt ceiling by the affordability solver.
+let loans = [
+  {key:"selfed",  name:"Self Education Loan", amount:1000000, rate:11,  start:25, span:10, elastic:false, active:true},
+  {key:"home",    name:"Home Loan",           amount:5000000, rate:8.5, start:30, span:25, elastic:true,  maxSpan:30, active:true, stepUp:true},
+  {key:"vehicle", name:"Vehicle Loan",        amount:500000,  rate:10,  start:33, span:7,  elastic:true,  maxSpan:10, canDelay:true, active:true},
+];
+// v2: Child Education & Marriage are savings GOALS funded from accumulation, not loans.
+let goals = [
+  {key:"childedu", name:"Child Education", amount:2000000, age:45, active:true},
+  {key:"marriage", name:"Child Marriage",  amount:1000000, age:52, active:true},
+];
+loans.forEach(l=>l.def={...l}); goals.forEach(g=>g.def={...g});
 let savings = [
   {name:"Already Accumulated Corpus (lumpsum ₹)", amt:500000, from:25, kind:"lump", atStart:true},
   {name:"Base savings (from day one)", amt:15, from:25, atStart:true},
@@ -370,6 +411,99 @@ let incomes = [];   // retirement income streams: {name, amt(abs ₹/mo at retir
 // snapshot each row's default values so a removed row can be restored
 function snapDefaults(list){ for(const r of list){ r.active=true; r.def={...r}; delete r.def.active; delete r.def.def; } }
 snapDefaults(expenses); snapDefaults(savings);
+
+// ===== v2 LOAN + GOAL ENGINE =====
+function salAt(age){ return P.income * Math.pow(1+P.growth/100, age-P.startAge); }
+function loanEMI(l){
+  if(l.amount<=0 || l.span<=0) return 0;
+  const r=l.rate/12/100, n=Math.round(l.span*12);
+  return r===0 ? l.amount/n : l.amount*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1);
+}
+function loanPct(l){ return l.active===false ? 0 : loanEMI(l)/salAt(l.start)*100; }   // % of its start-year salary
+// interest-only monthly for a loan (the floor a step-up EMI can drop to)
+function loanInterestOnly(l){ return l.amount*(l.rate/12/100); }
+// home EMI % at a given age: if step-up and other loans are running, pay a reduced (down to interest-only) EMI
+function homePctAt(home, age){
+  if(age<home.start || age>=home.start+home.span) return 0;
+  const fullEmi=loanEMI(home), sal=salAt(age);
+  const fullPct=fullEmi/salAt(home.start)*100;
+  if(!home.stepUp) return fullPct;
+  // are other loans (self-ed, vehicle) active this year?
+  let otherPct=0;
+  for(const l of loans){ if(l.key!=="home" && l.active!==false && l.amount>0 && age>=l.start && age<l.start+l.span) otherPct+=loanPct(l); }
+  if(otherPct<=0) return fullPct;   // no overlap -> full EMI
+  // overlap: reduce home toward interest-only so total stays reasonable, but never below interest-only
+  const ioPct=loanInterestOnly(home)/salAt(home.start)*100;
+  const room=Math.max(ioPct, 40-otherPct);   // leave the home whatever room the 40% ceiling allows
+  return Math.min(fullPct, room);
+}
+function loanPctAt(l, age){
+  if(l.active===false || l.amount<=0 || age<l.start || age>=l.start+l.span) return 0;
+  if(l.key==="home") return homePctAt(l, age);
+  return loanPct(l);
+}
+function loadAt(age){
+  let p=0;
+  for(const l of loans){ p+=loanPctAt(l, age); }
+  return p;
+}
+function peakLoad(){
+  let mx=0, mxAge=P.startAge;
+  for(let a=P.startAge; a<P.retire; a++){ const v=loadAt(a); if(v>mx){mx=v;mxAge=a;} }
+  return {mx, mxAge};
+}
+// affordability waterfall — mutates loans in place, returns the assisted story
+function debtCeiling(){ return P.income<=200000 ? 40 : 30; }   // <=2L/mo (max 20% bracket) -> 40%, else 30%
+function solveLoans(){
+  // Non-destructive: never overwrites the user's slider values. Computes advice only.
+  const CEIL=debtCeiling(), TOL=0.6;
+  const story=[];
+  let pk=peakLoad();
+  if(pk.mx<=CEIL+TOL) return {story, peak:pk.mx, peakAge:pk.mxAge, binding:null, feasible:true};
+  const sim=loans.map(l=>({...l}));
+  const load=()=>{ let mx=0,age=P.startAge; for(let a=P.startAge;a<P.retire;a++){ let p=0; for(const l of sim){ if(l.active!==false&&l.amount>0&&a>=l.start&&a<l.start+l.span){ p+=loanEMI(l)/salAt(l.start)*100; } } if(p>mx){mx=p;age=a;} } return {mx,age}; };
+  const H=sim.find(l=>l.key==="home"), V=sim.find(l=>l.key==="vehicle");
+  let pj=load();
+  if(H && H.amount>0){ const ms=Math.min(H.maxSpan||30, P.retire-H.start); const s0=H.span; while(pj.mx>CEIL+TOL && H.span<ms){ H.span++; pj=load(); } if(H.span>s0) story.push(`stretch Home ${s0}\u2192${H.span} yrs`); }
+  if(V && V.amount>0){ const ms=Math.min(V.maxSpan||10, P.retire-V.start); const s0=V.span; while(pj.mx>CEIL+TOL && V.span<ms){ V.span++; pj=load(); } if(V.span>s0) story.push(`stretch Vehicle ${s0}\u2192${V.span} yrs`); }
+  if(V && V.amount>0){ const latest=P.retire-10-V.span, t0=V.start; while(pj.mx>CEIL+TOL && V.start<latest){ V.start++; pj=load(); } if(V.start>t0) story.push(`delay Vehicle to age ${V.start}`); }
+  let binding=null;
+  if(pj.mx>CEIL+TOL){
+    const active=loans.filter(l=>l.active!==false && l.amount>0 && pk.mxAge>=l.start && pk.mxAge<l.start+l.span);
+    active.sort((a,b)=>loanPct(b)-loanPct(a));
+    const top=active.slice(0,2); binding=top[0]?top[0].key:null;
+    const names=top.map(l=>`${l.name} ${loanPct(l).toFixed(0)}%`).join(" + ");
+    story.push(`even maxed out you're at ${pj.mx.toFixed(0)}% \u2014 ${names} is the load. Reduce a loan amount.`);
+  }
+  return {story, peak:pk.mx, peakAge:pk.mxAge, binding, feasible:false};
+}
+// goal monthly saving as % of today's income, funded at the accumulation return
+function goalPct(g){
+  if(g.active===false) return 0;
+  const yrs=g.age-P.startAge; if(yrs<=0) return g.amount/P.income*100;
+  const r=P.racc/100/12, n=yrs*12;
+  const monthly = r===0 ? g.amount/n : g.amount*r/(Math.pow(1+r,n)-1);
+  return monthly/P.income*100;
+}
+// ---- FY2026-27 New Regime income tax (marginal, +std deduction, 87A rebate, cess) ----
+function incomeTaxAnnual(grossAnnual){
+  let ti=Math.max(0, grossAnnual-75000);
+  const slabs=[[400000,0],[800000,0.05],[1200000,0.10],[1600000,0.15],[2000000,0.20],[2400000,0.25],[Infinity,0.30]];
+  let tax=0, prev=0;
+  for(const [ceil,rate] of slabs){ if(ti>prev){ tax+=(Math.min(ti,ceil)-prev)*rate; prev=ceil; } else break; }
+  if(ti<=1200000) tax=Math.max(0, tax-60000);
+  return tax*1.04;
+}
+function taxPct(){ return incomeTaxAnnual(P.income*12)/(P.income*12)*100; }
+// a flat-rupee expense as % of current income (doesn't scale with salary)
+function flatPct(e){ return (e.flatMonthly||0)/P.income*100; }
+// effective working-year % for an expense row (tax computed, flat rows fixed-rupee, else the % amt)
+function expPct(e){
+  if(e.active===false) return 0;
+  if(e.computed==="tax") return taxPct();
+  if(e.flatMonthly) return flatPct(e);
+  return e.amt;
+}
 // auto-linked tranches: freed loan/goal money flows into savings the year it ends
 expenses.forEach((e,i)=>{
   if(!e.slider) return;
@@ -591,24 +725,58 @@ function lumpAt(age){
   }
   return t;
 }
+// v2: living expenses that run during working years, as % of income (excludes retirement-only)
+function livingPctAt(age){
+  let p=0;
+  for(const e of expenses){ if(e.active!==false && e.from<=age && e.till>age) p+=expPct(e); }
+  return p;
+}
+// baseline "committed" savings % from the savings rows (Base savings etc.)
+function baseSavingsPct(){
+  let p=0;
+  for(const s of savings){ if(s.active!==false && s.kind!=="lump") p+=s.amt; }
+  return p;
+}
+// total EMI % of a given year's salary for loans ACTIVE that year
+function emiPctAt(age){
+  let p=0;
+  for(const l of loans){ p+=loanPctAt(l, age); }
+  return p;
+}
+// freed EMI % = loans that have ALREADY ENDED by this age (their full % is now available)
+function freedPctAt(age){
+  let p=0;
+  for(const l of loans){ if(l.active!==false && l.amount>0 && age>=l.start+l.span) p+=loanPct(l); }
+  return p;
+}
+// goal contribution % running at this age (goals fund from startAge until their target age)
+function goalPctAt(age){
+  let p=0;
+  for(const g of goals){ if(g.active!==false && age<g.age) p+=goalPct(g); }
+  return p;
+}
 function simulate(){
+  solveLoans();                       // apply affordability waterfall first
   const traj=[]; let c=0;
+  const FREED_TO_EQUITY=0.70;         // 70% of freed EMI -> equity savings, 30% -> lifestyle
   for(let age=P.startAge; age<P.retire; age++){
-    let contrib=0;
-    for(const s of savings){
-      if(s.active===false || s.kind==="lump") continue;
-      if(age>=s.from) contrib += s.amt;
-    }
-    contrib *= 12 * mult(age) * scale() * norm();
+    const freed = freedPctAt(age);
+    // freed EMI: 70% -> equity savings, 30% -> House/Living (but house+lifestyle stays <= 30% of income)
+    let baseSave = baseSavingsPct();
+    let freedSave = freed*FREED_TO_EQUITY;
+    let savePct = baseSave + freedSave;
+    let contrib = savePct/100 * P.income * 12 * mult(age)/mult(P.startAge);   // rides on salary growth
     c = (c + lumpAt(age))*(1+P.racc/100) + contrib;
-    traj.push({age:age+1, v:c, phase:"acc"});
+    traj.push({age:age+1, v:c, phase:"acc", emi:emiPctAt(age), freed, save:savePct, tax:taxPct()});
   }
-  c += lumpAt(P.retire);   // corpus already in hand when start = retire, or a windfall landing exactly at retirement
+  c += lumpAt(P.retire);
   const achieved=c;
   const req = requiredCorpus();
   const w = walkBuckets(achieved, true);
   for(const pnt of w.traj) traj.push(pnt);
-  return {achieved, req, traj, leftover:w.left, depleted:w.dep, annPrincipal:w.annPrincipal};
+  const ln=solveLoans();
+  return {achieved, req, traj, leftover:w.left, depleted:w.dep, annPrincipal:w.annPrincipal,
+          loanStory:ln.story, peakLoad:ln.peak, peakAge:ln.peakAge, feasible:ln.feasible};
 }
 
 // ---------- formatting ----------
@@ -623,6 +791,57 @@ function lots(amt){ const n=amt/5; return (Number.isInteger(n)? n : n.toFixed(1)
 
 // ---------- render tables ----------
 function num(v,min,max,cb){ return `<input type="number" value="${v}" min="${min}" max="${max}" onchange="${cb}">`; }
+function renderLoans(r){
+  const CEIL=debtCeiling();
+  // debt meter
+  const pk=peakLoad();
+  const pctW=Math.min(100, pk.mx/50*100), ceilW=CEIL/50*100;
+  const col = pk.mx<=CEIL+0.5 ? "var(--green)" : "var(--red)";
+  document.getElementById("debtMeter").innerHTML =
+    `<div style="font-size:11px;color:var(--ink-soft);margin-bottom:3px;font-family:var(--mono)">Peak EMI load: ${pk.mx.toFixed(0)}% of salary at age ${pk.mxAge} · ceiling ${CEIL}% (${P.income<=200000?"low tax bracket lifts it to 40%":"25%+ tax bracket → 30%"})</div>`+
+    `<div class="meter"><div class="fill" style="width:${pctW}%;background:${col}"></div><div class="ceil" style="left:${ceilW}%"></div><div class="lbl">${pk.mx<=CEIL+0.5?"within ceiling ✓":"over ceiling"}</div></div>`;
+  const money=v=>v>=1e7?"₹"+(v/1e7).toFixed(2)+" Cr":v>=1e5?"₹"+(v/1e5).toFixed(1)+" L":"₹"+Math.round(v).toLocaleString("en-IN");
+  const lr=document.getElementById("loanRows");
+  if(!lr.getAttribute("data-built")){
+    lr.innerHTML = loans.map((l,i)=>{
+      const minAmt = l.key==="home"?1500000 : l.key==="vehicle"?100000 : 300000;
+      const maxAmt = l.key==="home"?20000000 : l.key==="vehicle"?2000000 : 1500000;
+      return `<div class="loanrow">
+        <div class="lh"><span class="lname">${l.name}</span><span class="lamt" id="lamt${i}"></span></div>
+        <input type="range" class="grow" min="${minAmt}" max="${maxAmt}" step="50000" value="${l.amount}" oninput="loans[${i}].amount=+this.value; recalc();">
+        <div class="lmini-row">
+          <label>rate</label><input type="range" min="7" max="14" step="0.25" value="${l.rate}" oninput="loans[${i}].rate=+this.value; recalc();"><span id="lrate${i}" style="font-family:var(--mono);font-size:11px;width:38px"></span>
+          <label>yrs</label><input type="range" min="3" max="${l.maxSpan||15}" step="1" value="${l.span}" oninput="loans[${i}].span=+this.value; recalc();"><span id="lspanlbl${i}" style="font-family:var(--mono);font-size:11px;width:32px"></span>
+        </div>
+        <div class="lsub" id="lsub${i}"></div>
+      </div>`;
+    }).join("");
+    lr.setAttribute("data-built","1");
+  }
+  loans.forEach((l,i)=>{
+    const emi=loanEMI(l), pct=loanPct(l);
+    const vehCap = l.key==="vehicle" ? P.income*5 : null;
+    const stepUp = l.key==="home" ? ' · step-up while education runs' : '';
+    const set=(id,t)=>{const e=document.getElementById(id); if(e) e.textContent=t;};
+    set("lamt"+i, money(l.amount));
+    set("lrate"+i, l.rate+"%");
+    set("lspanlbl"+i, l.span+"y");
+    const sub=document.getElementById("lsub"+i);
+    if(sub) sub.textContent = `EMI ${money(emi)}/mo = ${pct.toFixed(1)}% of salary · ages ${l.start}\u2013${l.start+l.span}${stepUp}${vehCap?` · cap 5\u00d7 salary = ${money(vehCap)}`:""}`;
+  });
+  const st=document.getElementById("loanStory");
+  st.innerHTML = (r.loanStory&&r.loanStory.length) ? `<div class="story-line">Over the ${CEIL}% ceiling \u2014 to fit, you could: ${r.loanStory.join(" · ")}.</div>` : "";
+  const gr=document.getElementById("goalRows");
+  if(!gr.getAttribute("data-built")){
+    gr.innerHTML = goals.map((g,i)=>`<div class="goalrow">
+      <span class="gname">${g.name}</span>
+      <input type="range" min="500000" max="5000000" step="100000" value="${g.amount}" oninput="goals[${i}].amount=+this.value; recalc();">
+      <span class="gval" id="gval${i}"></span>
+    </div>`).join("");
+    gr.setAttribute("data-built","1");
+  }
+  goals.forEach((g,i)=>{ const e=document.getElementById("gval"+i); if(e) e.textContent=`${money(g.amount)} @ age ${g.age} · ${goalPct(g).toFixed(1)}%`; });
+}
 function renderTables(){
   const dis=a=>a?"":"disabled";
   const eb=document.querySelector("#expTable tbody");
@@ -636,7 +855,11 @@ function renderTables(){
       : `<input type="number" value="${v('till')}" min="18" max="100" ${dis(a)} onchange="upd('e',${i},'till',this.value)">`;
     return `<tr class="${a?'':'inactive'}">
     <td><input type="text" value="${e.name.replace(/"/g,'&quot;')}" ${dis(a)} onchange="expenses[${i}].name=this.value"><div class="spanline" id="sp-e${i}">${a?spanTextE(e):"—"}</div></td>
-    <td><input type="number" value="${v('amt')}" min="0" max="100" ${dis(a)} onchange="upd('e',${i},'amt',this.value)"> <span style="font-size:10px;color:var(--ink-soft)">%</span></td>
+    <td>${e.computed==="tax"
+      ? `<b style="font-family:var(--mono);font-size:13px">${taxPct().toFixed(0)}%</b> <span style="font-size:9px;color:var(--ink-soft)">auto</span>`
+      : e.flatMonthly
+      ? `<b style="font-family:var(--mono);font-size:13px">${flatPct(e).toFixed(1)}%</b> <span style="font-size:9px;color:var(--ink-soft)">₹${e.flatMonthly}/mo</span>`
+      : `<input type="number" value="${v('amt')}" min="0" max="100" ${dis(a)} onchange="upd('e',${i},'amt',this.value)"> <span style="font-size:10px;color:var(--ink-soft)">%</span>`}</td>
     <td>${fromCell}</td>
     <td>${tillCell}</td>
     <td><input type="number" value="${v('ret')}" min="0" max="105" ${dis(a)} onchange="upd('e',${i},'ret',this.value)"> <span style="font-size:10px;color:var(--ink-soft)">0 = stops</span></td>
@@ -665,6 +888,25 @@ function renderTables(){
     <td>${fromCell}</td>
     <td>${btns('s',i,a,s.custom)}</td>
   </tr>`;}).join("");
+  // live allocation banner: expenses (working-year %, incl computed tax) + base savings + loan EMIs
+  const bn=document.getElementById("allocBanner");
+  if(bn){
+    let exp=0; for(const e of expenses){ if(e.active!==false && e.from<=P.startAge && e.till>P.startAge) exp+=expPct(e); }
+    const emi=emiPctAt(P.startAge), sav=baseSavingsPct(), tot=exp+emi+sav, free=100-tot;
+    const money=p=>{const v=Math.abs(p)/100*P.income; return v>=1e5?"₹"+(v/1e5).toFixed(1)+"L":"₹"+Math.round(v).toLocaleString("en-IN");};
+    let msg, bg, bd;
+    if(tot>100.5){
+      bg="var(--red-soft,#F3DFD9)"; bd="var(--red)";
+      msg=`You've committed <b>${tot.toFixed(0)}%</b> of income — <b style="color:var(--red)">${(tot-100).toFixed(0)}% over</b> (${money(tot-100)}/mo short). Trim living, savings, or a loan.`;
+    } else if(free>0.5){
+      bg="#F4E9CF"; bd="var(--brass)";
+      msg=`<b>${free.toFixed(0)}% of your income (${money(free)}/mo) is unassigned.</b> It's yours to direct — raise your savings, lift your lifestyle, or afford a bigger loan. Nothing is decided until you place it.`;
+    } else {
+      bg="var(--green-soft,#DCEBE2)"; bd="var(--green)";
+      msg=`Every rupee is assigned — living ${exp.toFixed(0)}% + EMIs ${emi.toFixed(0)}% + savings ${sav.toFixed(0)}% = <b style="color:var(--green)">100% ✓</b>`;
+    }
+    bn.innerHTML = `<div style="background:${bg};border-left:3px solid ${bd};padding:7px 11px;border-radius:3px">At age ${P.startAge}: ${msg}</div>`;
+  }
 }
 function rupees(pct){ return fmt(pct/100*P.income*norm())+"/mo"; }
 function spanTextE(e){
@@ -674,7 +916,8 @@ function spanTextE(e){
   if(e.ret>P.retire) s+=` · then in retirement till ${Math.min(e.ret,P.endage)}`;
   else if(e.till<P.retire) s+=` · ends at ${t}`;
   else s+=` · stops at retirement`;
-  return s+` · ${rupees(e.amt)}`;
+  const p = e.computed==="tax" ? taxPct() : (e.flatMonthly? flatPct(e) : e.amt);
+  return s+` · ${rupees(p)}`;
 }
 function spanTextS(s){
   if(s.kind==="lump") return `one-time ${fmt(s.amt)} at age ${Math.max(s.from,P.startAge)}`;
@@ -892,10 +1135,12 @@ function recalc(){
   clampRows();
   syncAutoTranches();
   showLevers();
+  renderTables();      // refresh computed tax row + allocation banner on every recalc
   const r=simulate();
   renderVerdict(r); renderChart1(r); renderChart2(r);
   lastMC=runMonteCarlo(1000); renderChart3(lastMC);
   updateStickyBar(r);
+  renderLoans(r);
 }
 // ---- feedback (replace with your address — one line) ----
 const CONTACT_EMAIL = "sureshtumu4@gmail.com";
@@ -920,6 +1165,13 @@ function sendFeedback(){
   window.location.href=`mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
 }
 document.getElementById("fbAlt").textContent="or email directly: "+CONTACT_EMAIL+' · subject starting "Retirement Corpus App — "';
+function resetDefaults(){
+  if(confirm("Reset everything to the starting figures? Your current changes will be discarded.")){
+    // strip any share-link hash so the page reloads with clean defaults
+    if(location.hash){ location.hash=""; }
+    location.reload();
+  }
+}
 function downloadPDF(){
   const r=simulate(), ok=r.achieved>=r.req, pct=Math.round(r.achieved/Math.max(r.req,1)*100);
   document.getElementById("printHead").textContent =
