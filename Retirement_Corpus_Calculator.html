@@ -179,6 +179,8 @@ input[type=range]{min-height:26px;touch-action:pan-y}
 .goalrow input[type=range]{flex:1;accent-color:var(--green)}
 .goalrow .gname{width:120px;font-weight:600}
 .goalrow .gval{width:130px;font-family:var(--mono);font-size:11px;color:var(--ink-soft);text-align:right}
+.autofitbtn{border:1px solid var(--brass);background:var(--brass);color:#fff;font-family:var(--mono);font-size:12px;font-weight:600;padding:6px 13px;cursor:pointer;border-radius:3px}
+.autofitbtn:hover{background:#a87d28}
 </style>
 </head>
 <body>
@@ -467,17 +469,33 @@ function solveLoans(){
   if(H && H.amount>0){ const ms=Math.min(H.maxSpan||30, P.retire-H.start); const s0=H.span; while(pj.mx>CEIL+TOL && H.span<ms){ H.span++; pj=load(); } if(H.span>s0) story.push(`stretch Home ${s0}\u2192${H.span} yrs`); }
   if(V && V.amount>0){ const ms=Math.min(V.maxSpan||10, P.retire-V.start); const s0=V.span; while(pj.mx>CEIL+TOL && V.span<ms){ V.span++; pj=load(); } if(V.span>s0) story.push(`stretch Vehicle ${s0}\u2192${V.span} yrs`); }
   if(V && V.amount>0){ const latest=P.retire-10-V.span, t0=V.start; while(pj.mx>CEIL+TOL && V.start<latest){ V.start++; pj=load(); } if(V.start>t0) story.push(`delay Vehicle to age ${V.start}`); }
-  let binding=null;
+  // eligible amounts: after stretching, scale every loan proportionally so peak = ceiling
+  let eligible=null;
   if(pj.mx>CEIL+TOL){
-    const active=loans.filter(l=>l.active!==false && l.amount>0 && pk.mxAge>=l.start && pk.mxAge<l.start+l.span);
-    active.sort((a,b)=>loanPct(b)-loanPct(a));
-    const top=active.slice(0,2); binding=top[0]?top[0].key:null;
-    const names=top.map(l=>`${l.name} ${loanPct(l).toFixed(0)}%`).join(" + ");
-    story.push(`even maxed out you're at ${pj.mx.toFixed(0)}% \u2014 ${names} is the load. Reduce a loan amount.`);
+    const factor=CEIL/pj.mx;                       // e.g. 40/209 = 0.19
+    eligible={ factor, spans:{}, starts:{}, amounts:{} };
+    for(const l of sim){ eligible.spans[l.key]=l.span; eligible.starts[l.key]=l.start; }
+    for(const l of loans){ eligible.amounts[l.key]=Math.max(0, Math.round(l.amount*factor/50000)*50000); }
+    const money=v=>v>=1e5?"\u20b9"+(v/1e5).toFixed(1)+"L":"\u20b9"+Math.round(v).toLocaleString("en-IN");
+    const parts=loans.filter(l=>l.active!==false&&l.amount>0).map(l=>`${l.name.replace(" Loan","")} ${money(eligible.amounts[l.key])}`);
+    story.push(`even maxed out you're at ${pj.mx.toFixed(0)}% of salary. Max eligible under ${CEIL}%: ${parts.join(" \u00b7 ")}`);
   }
-  return {story, peak:pk.mx, peakAge:pk.mxAge, binding, feasible:false};
+  return {story, peak:pk.mx, peakAge:pk.mxAge, binding:null, feasible:false, eligible};
 }
 // goal monthly saving as % of today's income, funded at the accumulation return
+function autoFitLoans(){
+  const r=solveLoans();
+  if(!r.eligible){ return; }
+  const e=r.eligible;
+  for(const l of loans){
+    if(e.spans[l.key]!==undefined) l.span=e.spans[l.key];
+    if(e.starts[l.key]!==undefined) l.start=e.starts[l.key];
+    if(e.amounts[l.key]!==undefined) l.amount=e.amounts[l.key];
+  }
+  // force the slider DOM to rebuild so positions reflect the new values
+  const lr=document.getElementById("loanRows"); if(lr) lr.removeAttribute("data-built");
+  recalc();
+}
 function goalPct(g){
   if(g.active===false) return 0;
   const yrs=g.age-P.startAge; if(yrs<=0) return g.amount/P.income*100;
@@ -827,10 +845,20 @@ function renderLoans(r){
     set("lrate"+i, l.rate+"%");
     set("lspanlbl"+i, l.span+"y");
     const sub=document.getElementById("lsub"+i);
-    if(sub) sub.textContent = `EMI ${money(emi)}/mo = ${pct.toFixed(1)}% of salary · ages ${l.start}\u2013${l.start+l.span}${stepUp}${vehCap?` · cap 5\u00d7 salary = ${money(vehCap)}`:""}`;
+    if(sub){
+      const atCap = vehCap && l.amount>=vehCap-1;
+      sub.innerHTML = `EMI ${money(emi)}/mo = ${pct.toFixed(1)}% of salary \u00b7 ages ${l.start}\u2013${l.start+l.span}${stepUp}`+
+        (vehCap?` \u00b7 <span style="color:${atCap?'#C9932F':'inherit'};font-weight:${atCap?'700':'normal'}">cap 5\u00d7 salary = ${money(vehCap)}${atCap?' (at max)':''}</span>`:"");
+    }
   });
   const st=document.getElementById("loanStory");
-  st.innerHTML = (r.loanStory&&r.loanStory.length) ? `<div class="story-line">Over the ${CEIL}% ceiling \u2014 to fit, you could: ${r.loanStory.join(" · ")}.</div>` : "";
+  if(r.loanStory&&r.loanStory.length){
+    st.innerHTML = `<div class="story-line">`+
+      `<div style="font-weight:600;margin-bottom:3px">Your loans exceed what this salary can service.</div>`+
+      `Over the ${CEIL}% ceiling \u2014 to fit, you could: ${r.loanStory.join(" \u00b7 ")}.`+
+      `<div style="margin-top:8px"><button class="autofitbtn" onclick="autoFitLoans()">\u26a1 Auto-fit loans to ${CEIL}%</button> <span style="font-size:11px;color:#8a6d3b">or drag the sliders yourself, or raise income.</span></div>`+
+      `</div>`;
+  } else st.innerHTML="";
   const gr=document.getElementById("goalRows");
   if(!gr.getAttribute("data-built")){
     gr.innerHTML = goals.map((g,i)=>`<div class="goalrow">
