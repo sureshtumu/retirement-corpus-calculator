@@ -1,5 +1,5 @@
 # Retirement Corpus Calculator — The Life Expense Pyramid
-### One salary, twenty lots of ₹5, and the corpus that must fund life after work
+### One salary, split across life's claims, and the corpus that must fund life after work
 
 **Model & concept:** Suresh Tumu · AMFI-certified · TechnoFunda community · Chennai
 **Built in partnership with Claude (Anthropic) · July 2026**
@@ -10,70 +10,53 @@ A single, self-contained HTML file. No installation, no server, no data collecti
 
 ## 1. What it answers
 
-Take one salary and split it into life's buckets — tax, house, loans, insurance, travel, savings. Loans end over time and their freed EMIs flow into savings. Savings compound until retirement into a corpus; that corpus must then fund every inflated expense for the rest of life.
+Take one salary and divide it across life's real claims — income tax, living expenses, loans, insurance, children's goals, and retirement savings. Loans start, run their course, and close; the freed EMIs then pour into equity. Savings compound until retirement into a corpus; that corpus must then fund every inflated expense for the rest of life.
 
 Two questions, answered live as you move any control:
 
 1. **The Magic Number** — the corpus required at retirement so expenses are funded exactly to the plan-until age, ending at zero.
-2. **On Track or Gap** — whether your accumulation (plus what you already hold) reaches it, shown as a % FUNDED verdict with the year the money would run dry if it falls short — and, beyond flat math, the **Monte Carlo survival rate** across 1,000 simulated market lives.
+2. **On Track or Gap** — whether your accumulation reaches it, shown as a % FUNDED verdict with the year the money would run dry if it falls short — and, beyond flat math, the **Monte Carlo survival rate** across 1,000 simulated market lives.
 
 This is an educational what-if illustration, not investment advice. Consult a financial advisor for decisions.
 
 ## 2. Quick start
 
-Open the file. The defaults describe someone starting at 25 on ₹1,00,000/month: 7% compound inflation, 6% salary growth, 10% accumulation return, retirement at 60 with 75% of final-salary lifestyle to age 90, the corpus split across annuity 30% @6.5%, FD/liquid 35% @7% and equity 35% @12% with 3 years of expenses kept as cash cover, and ₹5,00,000 already in hand. Loans start a few years in and run realistic spans (education 5 yrs from age +1, child education 15 yrs from +3, house EMI 20 yrs from +5, vehicle 10 yrs from +3), so their freed EMIs flow into savings early. This opens ON TRACK at ~181% funded, with ~89% of simulated lives surviving in the Monte Carlo panel.
+Open the file. The defaults describe someone starting at 25 on Rs 1,00,000/month: 7% compound inflation, 6% salary growth, 10% accumulation return, retirement at 60 with 96% of last-drawn lifestyle to age 90, a conservative post-retirement mix (annuity 30% @6.5%, FD 50% @7%, equity 20% @10% with 3 years of cash cover), and Rs 5,00,000 already in hand. Loans open at a Rs 50L home, Rs 10L self-education, and a Rs 5L vehicle, with children's education (Rs 20L @45) and marriage (Rs 10L @52) funded as savings goals. This opens ON TRACK at ~124% funded.
 
 Five things to try first:
-- **Starting age** 22 vs 30 — three years either side is a sea change (142% vs 85% funded; the late starter runs dry at 84).
-- **House Loan EMI year-slider** 30 → 20 — the freed EMI auto-invests and the corpus jumps by over a crore, live.
-- **Corpus buckets** — slide FD to 100% (no annuity, no equity) and watch the magic number climb from ₹9.0 Cr to ₹12.0 Cr, and Monte Carlo survival fall from 68% to 46%.
-- **Cash cover** 0 → 7 years — safety has a price: more years parked in FD raises the magic number from ₹8.4 Cr to ₹10.1 Cr.
-- **Healthcare inflation** at 12% — the India-specific warning, quantified.
-- **Salary growth** at 10% — earning more doesn't save a plan whose lifestyle rides the salary.
+- **Income slider** Rs 1L to Rs 2L — watch income tax appear (0% at Rs 12L/year, then rising by slab) and the debt ceiling stay generous.
+- **Home loan** toward Rs 1 Cr — watch the debt meter go red and the assisted story name the binding loan.
+- **Starting age** 22 vs 30 — three years either side is a sea change.
+- **Cash cover** 0 to 7 years — safety has a price: more years parked in FD raises the magic number.
+- **Corpus buckets** — slide FD to 100% (no annuity, no equity) and watch the magic number climb and Monte Carlo survival fall.
 
 ## 3. The model, precisely
 
-All category amounts are **percentages of income** (the "20 lots of ₹5 on ₹100" idea); rupee equivalents show in each row's grey line. The engine runs in yearly steps.
+The engine runs in yearly steps. Living expenses and savings are **percentages of income**; loans are **absolute rupees** the tool turns into EMIs.
 
-**Two indexes.** Salary grows at its own rate — contributions ride on it. Retirement lifestyle is anchored to the **last-drawn salary**, then inflates at price inflation, with **healthcare on its own (usually higher) rate**.
+**Income tax (new regime, computed live).** The Tax row is not editable — it applies the FY2026-27 New Regime slabs (nil up to Rs 4L, then 5/10/15/20/25/30% bands), a Rs 75,000 standard deduction, the Section 87A rebate (which makes taxable income up to Rs 12L tax-free), and 4% cess. At Rs 1L/month the tax is effectively zero; it rises by slab as income grows. Move the income slider and the tax recalculates.
 
-**Allocation & normalization.** At the starting age, active expense rows plus monthly savings should total 100% of income. Above 100%, every row is proportionately scaled by `100/total` in all calculations, with a red note stating the factor. Below 100%, the shortfall is simply unallocated.
+**Loans in rupees, with an affordability engine.** Each loan (Home, Self-Education, Vehicle) is set in rupees, with its own interest rate and tenure. The tool computes the EMI by amortization and expresses it as a share of that year's salary (a step-up view — the EMI rises with your salary). The single rule it enforces is a **tax-aware debt ceiling**: while your salary is Rs 2L/month or below (max 20% tax bracket), total concurrent EMIs may reach **40%** of salary — the tax you save funds the extra servicing; above Rs 2L/month (25%+ bracket) the ceiling tightens to **30%**. The ceiling is checked year by year against your grown salary.
 
-**Accumulation.** Yearly: `corpus = (corpus + lumpsums landing this year) × (1 + return) + monthly savings × 12 × salary-index × normalization`. The lumpsum ("Already Accumulated Corpus") is absolute rupees — it neither scales with income nor inflates, and compounds from the year it lands, even if that is the retirement year itself (a 55- or 60-year-old starter is fully supported).
+**The assisted waterfall.** If your loans breach the ceiling, the tool doesn't just fail — it shows its work: it stretches the home-loan tenure (up to 30 years, closing by 60), then stretches the vehicle loan, then delays the vehicle start, and if it still doesn't fit, it names the binding loan so you know exactly what to trim. The home loan is a **step-up loan** — it pays a lighter EMI while an education loan is still running, then accelerates once that clears.
 
-**Auto-linked freed money.** Each year-slider category (Education Loan, Child Education & Marriage, House EMI, Vehicle) begins a set number of years after the starting age — a `startOffset` — and runs for its own span, then hands its freed % to a matching "Freed when … ends" savings tranche that starts exactly at the loan's end. Shorten the loan or move the starting age and both the loan and its freed tranche shift instantly. Edit the tranche's % to redirect less than 100%; Remove it to spend the freed money; Restore re-links.
+**Freed EMIs become equity.** When a loan closes, its freed EMI doesn't vanish — 70% flows into equity/MF accumulation (the growth phase of your career), 30% lifts your lifestyle (a bigger phone, a TV, upgrades). This is why the savings rate ramps from ~15% early to ~39% in the final working years, and why most of the corpus is built late.
 
-**Post-retirement buckets (the Indian reality).** At retirement the corpus deploys into three buckets: **Annuity** (share 0–60%, rate 5.5–9%) whose principal is *locked for life* — it pays a level income and passes to the nominee, shown separately in the verdict; **FD/Liquid** (rate 5.5–12%); and **Equity/MF** (the remainder, rate 6–25%). Each retirement year is funded from the FD/liquid bucket, which is then topped back up to the **cash cover** level (0–7 years of expenses, default 3) by selling equity — so ready cash is always on hand while the rest keeps compounding. Surplus income parks back into FD. **The Magic Number is found by search**: the smallest corpus that survives to the plan-until age under this same policy, after pension/rent income.
+**Children as goals, not loans.** Education and marriage have deadlines you know decades ahead. Funded as savings goals from the start, Rs 20L at 45 costs about 1.3% of income a month, and Rs 10L at 52 about 0.6% — a fraction of what borrowing late would cost.
 
-**Retirement income streams.** Pension, rent, royalties: ₹/month at retirement, from/till ages, and an "inflates?" flag (rent yes, fixed annuity/pension no). These reduce the magic number directly; if income fully covers expenses, the verdict says so.
+**Allocation is yours to decide.** A banner shows how much of your income is committed (living + EMIs + savings) and how much is unassigned. The tool deliberately does **not** auto-balance — it nudges you to place the free cash yourself: raise savings, lift lifestyle, or afford a bigger loan. Nothing is decided until you place it.
 
-**Monte Carlo.** 1,000 simulated lives per recalculation (seeded — reproducible), swinging accumulation and equity-bucket returns by the volatility σ each year while FD and annuity stay fixed. The panel shows the 10th–90th percentile wealth band, the median path, failing lives in red, and a survival chip (green ≥ 80%). Flat returns overstate safety — the median simulated path grows slower than the average return (volatility drag), which is why an 118%-funded plan can be a coin-flip in real markets.
+**Post-retirement buckets.** At retirement the corpus deploys into three buckets: **Annuity** (locked for life, pays income, passes to nominee), **FD/Liquid**, and **Equity/MF**. Each retirement year is funded from FD, which is topped back up to a **cash-cover** level (default 3 years) by selling equity — so ready cash is always on hand while the rest keeps compounding. The Magic Number is found by search: the smallest corpus that survives to the plan-until age under this policy.
 
-## 4. Control reference
+**Monte Carlo.** 1,000 simulated lives per recalculation (seeded, reproducible), swinging accumulation and equity-bucket returns by the volatility sigma each year while FD and annuity stay fixed. Flat returns overstate safety — a plan that looks well-funded on averages can be a coin-flip in real markets.
 
-**Levers:** monthly income at start · starting age 18–60 · inflation % + simple/compound · salary growth % · healthcare inflation % · accumulation return % · volatility σ · corpus buckets (annuity share+rate, FD share+rate, equity rate) · retirement expense ratio % · retirement age (auto-clamps ≥ start) · plan-until age.
+## 4. Honest limits
 
-**Expense rows:** % of income, from/till ages *or* a year-slider (capped at retirement − the row's own start; stored years survive slider round-trips), "in retirement till" age (0 = stops). Rows marked "at start" follow the starting-age slider; loan rows carry a `startOffset` so they begin a few years in (shown as "at start +N") and shift with the slider; typing a from-age makes a row absolute.
+Yearly steps; contributions at year-end, lumpsums at year-start; ages are integers. EMIs are modeled as a level share of the start-year salary (a simplification of true step-up schedules). Insurance premiums (health, term) are held flat during working years. The debt ceiling and tax calculation reflect FY2026-27 rules and simplify some real-world details (no HRA, 80C legacy, or surcharge above Rs 50L income). Monte Carlo randomizes market returns only, with independent yearly draws — real markets have fat tails and momentum this doesn't capture. Nothing here is a return guarantee.
 
-**Accumulation rows:** the lumpsum (absolute ₹, editable landing age — also models future windfalls), base savings %, auto-linked freed tranches.
+## 5. Visitor stats
 
-**Income rows:** all user-added, fully deletable.
-
-**Buttons:** predefined rows have **Remove** (grey to zero, values preserved) and **Restore** (defaults, re-linked); user-added rows also have **Delete** (permanent).
-
-**Sharing & output:** the **🔗 Copy share link** button encodes the entire scenario — plus your optional name and email — into a URL; opening it restores everything and shows "Scenario shared by …" so the recipient knows who's asking and where to reply. **⬇ Download PDF report** prints a dated, assumption-stamped report (choose "Save as PDF"). The **feedback form** opens your email app pre-addressed with subject "Retirement Corpus App — {your words}", optionally attaching your scenario summary — only if you tick the box.
-
-## 5. For contributors — where things live
-
-One HTML file, three zones. **CSS** at top: the palette is six variables in `:root`; `.mini`/`.rmini`, `.spanline`, print styles. **State**: `expenses[]`, `savings[]`, `incomes[]`, and `P` (all levers). Row flags: `atStart`, `slider`+`years`+`startOffset`, `kind:"lump"`, `auto`+`link`, `med`, `custom`, `active`, `overridden`, `def` (Restore snapshot). **Engine**: `mult` (salary index), `infGrow`, `retExpense`, `walkBuckets`, `requiredCorpus` (binary search), `runMonteCarlo` (mulberry32-seeded), `simulate`, `syncAutoTranches`, `norm`. **Rendering**: `renderTables`, `renderVerdict`, `renderChart1/2/3`, with `recalc()` as the single heartbeat. Share links live in `shareState`/`copyShareLink`/`loadFromHash`.
-
-Common enhancements: change defaults (edit row arrays *and* matching HTML `value=` attributes); add a category (append a row object — `slider:true, years:N` auto-creates its freed tranche); add a lever (copy a `.lever` block, add its id to the bind list); new ideas welcome via the feedback form. The engine is DOM-light by design — it can be smoke-tested in Node by stubbing `document` and calling `simulate()` directly; keep new logic in engine functions, not render strings.
-
-**Visitor stats:** a GoatCounter snippet sits just before `</body>`. It counts page views only — it never sees the numbers users type — and can email a periodic report.
-
-## 6. Honest limits
-
-Yearly steps; contributions at year-end, lumpsums at year-start; ages are integers. Working-year expense spans affect the corpus only through their freed tranches — by design, matching the original Excel. The expense ratio applies uniformly to continuing categories. Monte Carlo randomizes market returns only (salary and inflation stay deterministic), with independent yearly draws — real markets have fat tails and momentum this doesn't capture. No tax modeling, deliberately. Nothing here is a return guarantee.
+A GoatCounter snippet sits just before the closing body tag. It counts page views only — it never sees the numbers users type — and can email a periodic report.
 
 ---
-*Version: July 2026 — percentage ledger · duration sliders with realistic loan start-offsets · auto-linked freed EMIs · lumpsum & late-starter support · salary step-up · healthcare inflation · annuity/FD/equity buckets · cash-cover replenishment · income streams · share links · Monte Carlo · PDF report · feedback form.*
+*Version: July 2026 (v2 affordability engine) — rupee loans, live income-tax calculation, tax-aware debt ceiling, step-up home loan, freed-EMI-to-equity transition, children as savings goals, allocation nudge, annuity/FD/equity buckets with cash cover, income streams, share links, Monte Carlo, PDF report, feedback form.*
