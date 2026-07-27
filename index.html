@@ -848,7 +848,7 @@ function renderLoans(r){
   const lr=document.getElementById("loanRows");
   if(!lr.getAttribute("data-built")){
     lr.innerHTML = loans.map((l,i)=>{
-      const minAmt = l.key==="home"?1500000 : l.key==="vehicle"?100000 : 300000;
+      const minAmt = 0;   // any loan can slide to zero — not everyone has these loans
       const maxAmt = l.key==="home"?Math.max(20000000, Math.round(l.incMult*P.income*2/50000)*50000) : l.key==="vehicle"?Math.max(2000000, Math.round(l.incMult*P.income*2/50000)*50000) : Math.max(1500000, Math.round(l.incMult*P.income*2/50000)*50000);
       return `<div class="loanrow">
         <div class="lh"><span class="lname">${l.name}</span><span class="lamt" id="lamt${i}"></span></div>
