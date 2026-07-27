@@ -213,7 +213,7 @@ input[type=range]{min-height:26px;touch-action:pan-y}
       </div>
       <div class="lever">
         <label>Inflation, per year <b id="v_inf"></b></label>
-        <input type="range" id="inf" min="2" max="10" step="0.5" value="7">
+        <input type="range" id="inf" min="2" max="10" step="0.5" value="6">
       </div>
       <div class="lever">
         <label>Inflation method</label>
@@ -246,28 +246,29 @@ input[type=range]{min-height:26px;touch-action:pan-y}
         <label><span>Annuity — share <b id="v_annPct"></b></span><span>rate <b id="v_annRate"></b></span></label>
         <div class="brow">
           <input type="range" id="annPct" class="grow" min="0" max="60" step="5" value="30">
-          <input type="range" id="annRate" class="rmini" min="5.5" max="9" step="0.25" value="6.5" title="Annuity rate 5.5–9%">
+          <span class="rmini" style="font-family:var(--mono);font-size:11px;color:var(--ink-soft);text-align:center;padding-top:3px">6% locked 🔒</span>
         </div>
         <label style="margin-top:6px"><span>FD / Liquid — share <b id="v_fdPct"></b></span><span>rate <b id="v_fdRate"></b></span></label>
         <div class="brow">
           <input type="range" id="fdPct" class="grow" min="0" max="100" step="5" value="50">
           <input type="range" id="fdRate" class="rmini" min="5.5" max="12" step="0.5" value="7" title="FD/Liquid rate 5.5–12%">
         </div>
-        <label style="margin-top:6px"><span>Equity / MF — remainder <b id="v_eqPct"></b></span><span>rate <b id="v_eqRate"></b></span></label>
+        <label style="margin-top:6px"><span>Equity / MF — share <b id="v_eqPct"></b></span><span>rate <b id="v_eqRate"></b></span></label>
         <div class="brow">
-          <span class="grow" style="font-size:11px;color:var(--ink-soft)">gets whatever annuity &amp; FD don't take</span>
+          <input type="range" id="eqPct" class="grow" min="0" max="70" step="5" value="20">
           <input type="range" id="eqRate" class="rmini" min="6" max="25" step="0.5" value="10" title="Equity/MF rate 6–25%">
         </div>
+        <div class="cap" style="font-size:10.5px;color:var(--ink-soft);margin-top:2px">Move any share — FD/Liquid absorbs the change so the three always total 100%. Annuity stays put.</div>
         <label style="margin-top:6px"><span>Cash cover held in FD <b id="v_cashYears"></b></span></label>
         <div class="brow">
           <span class="grow" style="font-size:11px;color:var(--ink-soft)">spend from FD; refill it from equity each year</span>
           <input type="range" id="cashYears" class="rmini" min="0" max="7" step="1" value="3" title="Years of expenses kept liquid">
         </div>
-        <label style="margin-top:2px"><span style="font-size:11px">Annuity principal is locked — pays income for life, passes to nominee. Each year you spend from FD, then top it back up to the cash-cover level by selling equity. Cash cover 0 = spend FD down fully before touching equity.</span></label>
+        <label style="margin-top:2px"><span style="font-size:11px">Annuity here is a <b>return-of-corpus</b> policy: the principal is locked, pays income for life at a fixed <b>6%</b>, and the full principal is returned to your nominee on death (that is the amount shown as returned to nominee). Each retirement year you spend from FD, then top it back up to the cash-cover level by selling equity.</span></label>
       </div>
       <div class="lever">
         <label>Retirement expenses (of working-age level, cell O2) <b id="v_ratio"></b></label>
-        <input type="range" id="ratio" min="30" max="100" step="1" value="96">
+        <input type="range" id="ratio" min="30" max="100" step="1" value="80">
       </div>
       <div class="lever">
         <label>Retirement age <b id="v_retire"></b></label>
@@ -391,9 +392,9 @@ let expenses = [
 // v2: loans are absolute rupees (not % rows). EMIs computed by amortization, expressed as % of
 // current-year salary, and enforced under a 30% total-debt ceiling by the affordability solver.
 let loans = [
-  {key:"selfed",  name:"Self Education Loan", amount:1000000, rate:11,  start:25, span:10, elastic:false, active:true},
-  {key:"home",    name:"Home Loan",           amount:5000000, rate:8.5, start:30, span:25, elastic:true,  maxSpan:30, active:true, stepUp:true},
-  {key:"vehicle", name:"Vehicle Loan",        amount:500000,  rate:10,  start:33, span:7,  elastic:true,  maxSpan:10, canDelay:true, active:true},
+  {key:"selfed",  name:"Self Education Loan", amount:1000000, rate:11,  start:25, span:10, elastic:false, active:true, incMult:10},
+  {key:"home",    name:"Home Loan",           amount:5000000, rate:8.5, start:30, span:25, elastic:true,  maxSpan:30, active:true, stepUp:true, incMult:50},
+  {key:"vehicle", name:"Vehicle Loan",        amount:500000,  rate:10,  start:33, span:7,  elastic:true,  maxSpan:10, canDelay:true, active:true, incMult:5},
 ];
 // v2: Child Education & Marriage are savings GOALS funded from accumulation, not loans.
 let goals = [
@@ -401,13 +402,24 @@ let goals = [
   {key:"marriage", name:"Child Marriage",  amount:1000000, age:52, active:true},
 ];
 loans.forEach(l=>l.def={...l}); goals.forEach(g=>g.def={...g});
+// loan defaults scale with income: each loan = its incMult x monthly income, rounded to 50k.
+// keeps the 10:50:5 ratio (self:home:vehicle) at any salary. Called when income changes.
+function rescaleLoanDefaults(){
+  for(const l of loans){
+    if(l.incMult){
+      l.amount = Math.max(50000, Math.round(l.incMult*P.income/50000)*50000);
+      if(l.def) l.def.amount = l.amount;
+    }
+  }
+  const lr=document.getElementById("loanRows"); if(lr) lr.removeAttribute("data-built");  // rebuild sliders at new scale
+}
 let savings = [
   {name:"Already Accumulated Corpus (lumpsum ₹)", amt:500000, from:25, kind:"lump", atStart:true},
   {name:"Base savings (from day one)", amt:15, from:25, atStart:true},
 ];
-let P = {income:100000, inf:7, infmode:"compound", growth:6, medinf:6, racc:10, vol:12,
-         annPct:30, annRate:6.5, fdPct:50, fdRate:7, eqRate:10, cashYears:3,
-         ratio:96, retire:60, endage:90, startAge:25};
+let P = {income:100000, inf:6, infmode:"compound", growth:6, medinf:6, racc:10, vol:12,
+         annPct:30, annRate:6, fdPct:50, fdRate:7, eqPct:20, eqRate:10, cashYears:3,
+         ratio:80, retire:60, endage:90, startAge:25};
 let incomes = [];   // retirement income streams: {name, amt(abs ₹/mo at retirement), from, till, inflating, active, custom}
 
 // snapshot each row's default values so a removed row can be restored
@@ -572,7 +584,7 @@ function loadFromHash(){
     savings.length=0;  st.S.forEach(r=>savings.push(r));
     incomes.length=0;  (st.I||[]).forEach(r=>incomes.push(r));
     reattachDefs();
-    ["income","start","inf","growth","medinf","racc","vol","annPct","annRate","fdPct","fdRate","eqRate","cashYears","ratio","retire","endage"].forEach(id=>{
+    ["income","start","inf","growth","medinf","racc","vol","annPct","fdPct","fdRate","eqRate","cashYears","ratio","retire","endage"].forEach(id=>{
       const el=document.getElementById(id); if(el && id in P) el.value=P[id];
       else if(el && id==="start") el.value=P.startAge;
     });
@@ -631,7 +643,7 @@ function cashTarget(age, annIncome){ // rupees to keep liquid: next N years of n
 }
 function walkBuckets(C, wantTraj){   // deploy corpus into buckets at retirement and draw down
   const A = C*P.annPct/100;
-  let d = C*Math.min(P.fdPct,100-P.annPct)/100;
+  let d = C*P.fdPct/100;
   let e = Math.max(0, C - A - d);
   const annIncome = A*(P.annRate/100);          // level payout, for life
   let dep=null; const traj=[];
@@ -668,7 +680,7 @@ function runMonteCarlo(N){
       wealth.push(Math.max(c,0));
     }
     c+=lumpAt(P.retire);
-    const A=c*P.annPct/100; let d=c*Math.min(P.fdPct,100-P.annPct)/100; let e=Math.max(0,c-A-d);
+    const A=c*P.annPct/100; let d=c*P.fdPct/100; let e=Math.max(0,c-A-d);
     const annIncome=A*(P.annRate/100);
     let dep=null;
     for(let age=P.retire; age<P.endage; age++){
@@ -773,19 +785,33 @@ function goalPctAt(age){
   for(const g of goals){ if(g.active!==false && age<g.age) p+=goalPct(g); }
   return p;
 }
+// blended return of the three buckets, used for freed-EMI reinvestment (change 1: freed EMI follows the bucket ratio)
+function blendedBucketReturn(){
+  const a=P.annPct/100, f=P.fdPct/100, e=P.eqPct/100;
+  return a*(P.annRate/100) + f*(P.fdRate/100) + e*(P.eqRate/100);
+}
 function simulate(){
-  solveLoans();                       // apply affordability waterfall first
+  solveLoans();
   const traj=[]; let c=0;
-  const FREED_TO_EQUITY=0.70;         // 70% of freed EMI -> equity savings, 30% -> lifestyle
+  // HONEST MODEL: each year, savings = whatever income remains after tax, living, EMIs and goals.
+  // EMIs (which include interest paid) genuinely compete with savings, so a bigger loan -> less saved
+  // during the loan years -> smaller corpus. The "freed EMI" effect emerges naturally: once a loan
+  // closes, that % is no longer an outgoing, so the leftover (savings) rises on its own.
+  const LIFESTYLE_ABSORB=0.30;   // 30% of any freed-up room lifts lifestyle rather than being saved
   for(let age=P.startAge; age<P.retire; age++){
-    const freed = freedPctAt(age);
-    // freed EMI: 70% -> equity savings, 30% -> House/Living (but house+lifestyle stays <= 30% of income)
-    let baseSave = baseSavingsPct();
-    let freedSave = freed*FREED_TO_EQUITY;
-    let savePct = baseSave + freedSave;
-    let contrib = savePct/100 * P.income * 12 * mult(age)/mult(P.startAge);   // rides on salary growth
+    const tax=taxPct();
+    const living=livingPctAt(age);          // house/living + flat insurance + discretionary (working-year %)
+    const emi=emiPctAt(age);                 // actual EMIs this year, % of salary (compound/reducing-balance)
+    const goal=goalPctAt(age);               // child goals funded this year
+    // whatever remains after the necessities is the year's saving capacity
+    let leftover = 100 - tax - living - emi - goal;
+    // in early/tight years a floor protects a minimum 10% saving (loans stretch instead — handled in solver advice)
+    let savePct = Math.max(0, leftover);
+    // 30% of the leftover lifts lifestyle (people spend some of the freed room), 70% is invested
+    savePct = savePct*(1-LIFESTYLE_ABSORB);
+    let contrib = savePct/100 * P.income * 12 * mult(age)/mult(P.startAge);
     c = (c + lumpAt(age))*(1+P.racc/100) + contrib;
-    traj.push({age:age+1, v:c, phase:"acc", emi:emiPctAt(age), freed, save:savePct, tax:taxPct()});
+    traj.push({age:age+1, v:c, phase:"acc", emi, freed:freedPctAt(age), save:savePct, tax});
   }
   c += lumpAt(P.retire);
   const achieved=c;
@@ -823,7 +849,7 @@ function renderLoans(r){
   if(!lr.getAttribute("data-built")){
     lr.innerHTML = loans.map((l,i)=>{
       const minAmt = l.key==="home"?1500000 : l.key==="vehicle"?100000 : 300000;
-      const maxAmt = l.key==="home"?20000000 : l.key==="vehicle"?2000000 : 1500000;
+      const maxAmt = l.key==="home"?Math.max(20000000, Math.round(l.incMult*P.income*2/50000)*50000) : l.key==="vehicle"?Math.max(2000000, Math.round(l.incMult*P.income*2/50000)*50000) : Math.max(1500000, Math.round(l.incMult*P.income*2/50000)*50000);
       return `<div class="loanrow">
         <div class="lh"><span class="lname">${l.name}</span><span class="lamt" id="lamt${i}"></span></div>
         <input type="range" class="grow" min="${minAmt}" max="${maxAmt}" step="50000" value="${l.amount}" oninput="loans[${i}].amount=+this.value; recalc();">
@@ -995,13 +1021,17 @@ function addSaving(){ const r={name:"New tranche",amt:5,from:P.startAge,atStart:
 // ---------- verdict + allocation check ----------
 function renderVerdict(r){
   const gap=r.achieved-r.req, ok=gap>=0, fullyByIncome=r.req<1000;
-  const nom = r.annPrincipal>0 ? ` + annuity ${fmt(r.annPrincipal)} to nominee` : "";
-  const dep = r.depleted ? `Depletes at age ${r.depleted}${r.annPrincipal>0||incomes.some(s=>s.active!==false)?" (annuity/pension income continues)":""}` : `Lasts to ${P.endage}, leftover ${fmt(r.leftover)}${nom}`;
+  const nom = r.annPrincipal>0 ? ` · plus ${fmt(r.annPrincipal)} annuity principal returned to nominee` : "";
+  // express the end-of-plan leftover in RETIREMENT-DAY money (discount nominal back to age 60 at price inflation)
+  const yrsAfterRetire = P.endage - P.retire;
+  const retireDayValue = r.leftover / Math.pow(1 + P.inf/100, yrsAfterRetire);
+  const todayNote = r.leftover>0 ? ` <span style="color:var(--ink-soft)">(≈ ${fmt(retireDayValue)} in retirement-day money)</span>` : "";
+  const dep = r.depleted ? `Depletes at age ${r.depleted}${r.annPrincipal>0||incomes.some(s=>s.active!==false)?" (annuity/pension income continues)":""}` : `Lasts to ${P.endage} with ${fmt(r.leftover)} still in FD/equity at the end${todayNote}${nom}`;
   document.getElementById("verdict").innerHTML = `
     <div class="vcard"><div class="lbl">Corpus at ${P.retire} (accumulated)</div><div class="num" style="color:var(--green)">${fmt(r.achieved)}</div><div class="sub">${P.racc}% return · ${P.infmode} ${P.inf}% inflation</div></div>
     <div class="vcard"><div class="lbl">Magic number — required at ${P.retire}</div><div class="num" style="color:var(--red)">${fmt(r.req)}</div><div class="sub">funds ages ${P.retire}–${P.endage} at ${P.ratio}% expenses · ${retExpense(P.retire)>0?(r.req/retExpense(P.retire)).toFixed(1):"—"}× first-year expense</div></div>
     <div class="vcard"><div class="lbl">${ok?"Surplus":"Shortfall"}</div><div class="num" style="color:${ok?'var(--green)':'var(--red)'}">${fmt(Math.abs(gap))}</div><div class="sub">${fullyByIncome?"expenses fully covered by income streams":(r.achieved/Math.max(r.req,1)).toFixed(2)+"× of what is required"}</div></div>
-    <div class="vcard"><div class="lbl">If you retire with what you saved</div><div class="num" style="font-size:16px;padding-top:8px">${dep}</div><div class="sub">buckets: annuity ${P.annPct}% @${P.annRate}% · FD ${Math.min(P.fdPct,100-P.annPct)}% @${P.fdRate}% · equity ${Math.max(0,100-P.annPct-Math.min(P.fdPct,100-P.annPct))}% @${P.eqRate}%</div></div>
+    <div class="vcard"><div class="lbl">If you retire with what you saved</div><div class="num" style="font-size:16px;padding-top:8px">${dep}</div><div class="sub">buckets: annuity ${P.annPct}% @${P.annRate}% · FD ${P.fdPct}% @${P.fdRate}% · equity ${P.eqPct}% @${P.eqRate}%</div></div>
     <div class="stamp ${ok?'ok':'bad'}"><div class="inner">${ok?'ON&nbsp;TRACK':'GAP!'}</div></div>`;
   // allocation check at starting age (percent of income)
   const tot=allocTotal();
@@ -1117,7 +1147,28 @@ function bind(id,key,fmtFn){
   const el=document.getElementById(id);
   el.addEventListener("input",()=>{P[key]=parseFloat(el.value); recalc();});
 }
-["inf","racc","ratio","income","growth","medinf","annPct","annRate","fdPct","fdRate","eqRate","vol","cashYears"].forEach(id=>bind(id,id));
+["inf","racc","ratio","growth","medinf","fdRate","eqRate","vol","cashYears"].forEach(id=>bind(id,id));
+document.getElementById("income").addEventListener("input",function(){
+  P.income=parseFloat(this.value)||100000;
+  rescaleLoanDefaults();          // new salary -> new appropriate loan sizes (10:50:5 ratio)
+  recalc();
+});
+// Bucket interlock: Annuity fixed by its slider; Equity user-set; FD = 100 - annuity - equity (FD absorbs all change).
+function bucketNormalize(changed){
+  let a=P.annPct, e=P.eqPct;
+  a=Math.max(0,Math.min(60,a)); e=Math.max(0,Math.min(80,e));
+  if(a+e>100){ if(changed==="eq") a=100-e; else e=100-a; }   // guard
+  let fd=100-a-e;
+  if(fd<0){ fd=0; if(changed==="eq") a=100-e; else e=100-a; }
+  P.annPct=a; P.eqPct=e; P.fdPct=100-a-e;
+}
+document.getElementById("annPct").addEventListener("input",function(){ P.annPct=parseFloat(this.value); bucketNormalize("ann"); syncBucketSliders(); recalc(); });
+document.getElementById("eqPct").addEventListener("input",function(){ P.eqPct=parseFloat(this.value); bucketNormalize("eq"); syncBucketSliders(); recalc(); });
+function syncBucketSliders(){
+  const a=document.getElementById("annPct"), e=document.getElementById("eqPct");
+  if(a && document.activeElement!==a) a.value=P.annPct;
+  if(e && document.activeElement!==e) e.value=P.eqPct;
+}
 ["retire","endage"].forEach(id=>{
   const el=document.getElementById(id);
   el.addEventListener("input",()=>{P[id]=parseFloat(el.value); renderTables(); recalc();});
@@ -1145,12 +1196,12 @@ function showLevers(){
   document.getElementById("v_growth").textContent=P.growth+"%";
   document.getElementById("v_vol").textContent="±"+P.vol+"%";
   document.getElementById("v_medinf").textContent=P.medinf+"%";
-  const fdEff=Math.min(P.fdPct,100-P.annPct), eqEff=Math.max(0,100-P.annPct-fdEff);
+  bucketNormalize("ann");
   document.getElementById("v_annPct").textContent=P.annPct+"%";
   document.getElementById("v_annRate").textContent=P.annRate+"%";
-  document.getElementById("v_fdPct").textContent=fdEff+"%";
+  document.getElementById("v_fdPct").textContent=P.fdPct+"%";
   document.getElementById("v_fdRate").textContent=P.fdRate+"%";
-  document.getElementById("v_eqPct").textContent=eqEff+"%";
+  document.getElementById("v_eqPct").textContent=P.eqPct+"%";
   document.getElementById("v_eqRate").textContent=P.eqRate+"%";
   document.getElementById("v_cashYears").textContent=P.cashYears===0?"off":P.cashYears+" yrs";
   document.getElementById("v_ratio").textContent=P.ratio+"%";
@@ -1178,7 +1229,7 @@ function scenarioSummary(){
     "MY SCENARIO",
     `Income Rs ${P.income.toLocaleString("en-IN")}/mo · start ${P.startAge} · retire ${P.retire} · plan to ${P.endage}`,
     `Inflation ${P.inf}% ${P.infmode} · salary growth ${P.growth}% · healthcare inf ${P.medinf}% · accumulation ${P.racc}%`,
-    `Buckets: annuity ${P.annPct}%@${P.annRate}% · FD ${Math.min(P.fdPct,100-P.annPct)}%@${P.fdRate}% · equity @${P.eqRate}% · cash cover ${P.cashYears} yrs · expenses ${P.ratio}% · allocation ${allocTotal().toFixed(0)}%`,
+    `Buckets: annuity ${P.annPct}%@${P.annRate}% · FD ${P.fdPct}%@${P.fdRate}% · equity ${P.eqPct}%@${P.eqRate}% · cash cover ${P.cashYears} yrs · expenses ${P.ratio}% · allocation ${allocTotal().toFixed(0)}%`,
     `Corpus at ${P.retire}: ${fmt(r.achieved)} · required: ${fmt(r.req)} · ${ok?"ON TRACK":"GAP"} ${Math.round(r.achieved/Math.max(r.req,1)*100)}% funded`,
     r.depleted ? `Depletes at ${r.depleted}` : `Leftover ${fmt(r.leftover)} at ${P.endage}`
   ].join("\n");
@@ -1203,7 +1254,7 @@ function resetDefaults(){
 function downloadPDF(){
   const r=simulate(), ok=r.achieved>=r.req, pct=Math.round(r.achieved/Math.max(r.req,1)*100);
   document.getElementById("printHead").textContent =
-    `RETIREMENT CORPUS REPORT · ${new Date().toLocaleDateString('en-IN')} · income ₹${P.income.toLocaleString('en-IN')}/mo from age ${P.startAge} · retire ${P.retire} · plan to ${P.endage} · inflation ${P.inf}% ${P.infmode} · salary +${P.growth}% · acc ${P.racc}% · buckets A${P.annPct}/F${Math.min(P.fdPct,100-P.annPct)}/E · expenses ${P.ratio}% — ${ok?'ON TRACK':'GAP'} · ${pct}% funded · Monte Carlo ${lastMC?lastMC.successPct+"% survive":""}`;
+    `RETIREMENT CORPUS REPORT · ${new Date().toLocaleDateString('en-IN')} · income ₹${P.income.toLocaleString('en-IN')}/mo from age ${P.startAge} · retire ${P.retire} · plan to ${P.endage} · inflation ${P.inf}% ${P.infmode} · salary +${P.growth}% · acc ${P.racc}% · buckets A${P.annPct}/F${P.fdPct}/E${P.eqPct} · expenses ${P.ratio}% — ${ok?'ON TRACK':'GAP'} · ${pct}% funded · Monte Carlo ${lastMC?lastMC.successPct+"% survive":""}`;
   window.print();   // choose "Save as PDF" as the destination
 }
 function updateStickyBar(r){
