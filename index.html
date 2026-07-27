@@ -1155,19 +1155,35 @@ document.getElementById("income").addEventListener("input",function(){
 });
 // Bucket interlock: Annuity fixed by its slider; Equity user-set; FD = 100 - annuity - equity (FD absorbs all change).
 function bucketNormalize(changed){
-  let a=P.annPct, e=P.eqPct;
-  a=Math.max(0,Math.min(60,a)); e=Math.max(0,Math.min(80,e));
-  if(a+e>100){ if(changed==="eq") a=100-e; else e=100-a; }   // guard
-  let fd=100-a-e;
-  if(fd<0){ fd=0; if(changed==="eq") a=100-e; else e=100-a; }
-  P.annPct=a; P.eqPct=e; P.fdPct=100-a-e;
+  // Annuity is always user-set (fixed). The OTHER two share the remaining (100 - annuity):
+  //  - drag Equity  -> FD absorbs   (FD = 100 - ann - eq)
+  //  - drag FD      -> Equity absorbs(eq = 100 - ann - fd)
+  //  - drag Annuity -> FD absorbs by default, equity held if room
+  let a=Math.max(0,Math.min(60,P.annPct));
+  let e=Math.max(0,Math.min(80,P.eqPct));
+  let fd=Math.max(0,Math.min(100,P.fdPct));
+  if(changed==="fd"){
+    e=Math.max(0, 100-a-fd);          // FD is the driver, equity absorbs
+    if(a+fd>100){ fd=100-a; e=0; }
+    P.annPct=a; P.fdPct=fd; P.eqPct=e;
+  } else if(changed==="eq"){
+    fd=Math.max(0, 100-a-e);          // equity driver, FD absorbs
+    if(a+e>100){ e=100-a; fd=0; }
+    P.annPct=a; P.eqPct=e; P.fdPct=fd;
+  } else {                            // annuity changed -> FD absorbs, keep equity if possible
+    fd=Math.max(0, 100-a-e);
+    if(a+e>100){ e=100-a; fd=0; }
+    P.annPct=a; P.eqPct=e; P.fdPct=fd;
+  }
 }
 document.getElementById("annPct").addEventListener("input",function(){ P.annPct=parseFloat(this.value); bucketNormalize("ann"); syncBucketSliders(); recalc(); });
 document.getElementById("eqPct").addEventListener("input",function(){ P.eqPct=parseFloat(this.value); bucketNormalize("eq"); syncBucketSliders(); recalc(); });
+document.getElementById("fdPct").addEventListener("input",function(){ P.fdPct=parseFloat(this.value); bucketNormalize("fd"); syncBucketSliders(); recalc(); });
 function syncBucketSliders(){
-  const a=document.getElementById("annPct"), e=document.getElementById("eqPct");
+  const a=document.getElementById("annPct"), e=document.getElementById("eqPct"), f=document.getElementById("fdPct");
   if(a && document.activeElement!==a) a.value=P.annPct;
   if(e && document.activeElement!==e) e.value=P.eqPct;
+  if(f && document.activeElement!==f) f.value=P.fdPct;
 }
 ["retire","endage"].forEach(id=>{
   const el=document.getElementById(id);
