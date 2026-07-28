@@ -154,9 +154,12 @@ input[type=range]{min-height:26px;touch-action:pan-y}
 .stickybar .bad{color:#F2A08E}
 .stickybar .dim{color:#9DB0A5}
 @media (max-width:640px){.stickybar{font-size:11px;padding:7px 6px}}
+@media (max-height:520px){.stickybar{display:none !important}}   /* short landscape phones: never overlay */
 @media print{.stickybar{display:none !important}}
-/* freeze the full verdict pane while the rest scrolls (desktop/tablet only) */
-@media (min-width: 641px){
+/* freeze the full verdict pane while the rest scrolls — only on genuinely tall viewports
+   (desktop/tablet). On short screens, incl. phones in landscape, it must NOT stick,
+   or it eats the whole screen and blocks scrolling. */
+@media (min-width: 641px) and (min-height: 620px){
   .verdict{position:sticky;top:0;z-index:110;background:var(--paper);
     padding:10px 0 12px;margin:10px 0 22px;
     box-shadow:0 8px 10px -8px rgba(0,0,0,.22)}
@@ -181,17 +184,82 @@ input[type=range]{min-height:26px;touch-action:pan-y}
 .goalrow .gval{width:130px;font-family:var(--mono);font-size:11px;color:var(--ink-soft);text-align:right}
 .autofitbtn{border:1px solid var(--brass);background:var(--brass);color:#fff;font-family:var(--mono);font-size:12px;font-weight:600;padding:6px 13px;cursor:pointer;border-radius:3px}
 .autofitbtn:hover{background:#a87d28}
+.helpbtn{border:1px solid var(--green);background:#fff;color:var(--green);font-family:var(--mono);font-size:12px;padding:7px 14px;cursor:pointer;white-space:nowrap;margin-right:8px}
+.helpbtn:hover{background:var(--green);color:#fff}
+.guide-scrim{position:fixed;inset:0;background:rgba(20,27,36,.55);z-index:200;display:none;opacity:0;transition:opacity .25s}
+.guide-scrim.open{display:block;opacity:1}
+.guide-panel{position:fixed;top:0;right:0;bottom:0;width:min(560px,94vw);background:var(--paper);z-index:201;
+  box-shadow:-8px 0 30px rgba(0,0,0,.3);transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  overflow-y:auto;-webkit-overflow-scrolling:touch}
+.guide-panel.open{transform:translateX(0)}
+.guide-head{position:sticky;top:0;background:var(--ink);color:#fff;padding:16px 22px;display:flex;justify-content:space-between;align-items:center;z-index:2}
+.guide-head h2{font-family:var(--slab);font-size:20px;font-weight:700;margin:0}
+.guide-head .close{background:none;border:1px solid #ffffff55;color:#fff;font-size:18px;width:32px;height:32px;border-radius:4px;cursor:pointer;line-height:1}
+.guide-head .close:hover{background:#ffffff22}
+.guide-body{padding:22px 24px 60px}
+.guide-body h3{font-family:var(--slab);font-size:16px;color:var(--brass);margin:22px 0 6px;border-bottom:1px solid var(--line);padding-bottom:4px}
+.guide-body h3:first-child{margin-top:0}
+.guide-body p{margin:8px 0;color:var(--ink);font-size:13.5px;line-height:1.6}
+.guide-body b{color:var(--green)}
+.guide-body .tag{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;background:var(--brass);color:#fff;padding:2px 8px;border-radius:3px;margin-bottom:4px}
+.guide-body .try{background:var(--green-soft);border-left:3px solid var(--green);padding:10px 14px;margin:10px 0;font-size:13px;border-radius:3px}
+.guide-body .note{background:#F4E9CF;border-left:3px solid var(--brass);padding:10px 14px;margin:10px 0;font-size:12.5px;border-radius:3px;color:#6b5320}
+.guide-body ul{margin:8px 0;padding-left:20px}
+.guide-body li{margin:5px 0;font-size:13px;line-height:1.55}
+@media print{.helpbtn,.guide-scrim,.guide-panel{display:none !important}}
 </style>
 </head>
 <body>
 <div class="stickybar" id="stickyVerdict"></div>
+<div class="guide-scrim" id="guideScrim" onclick="closeGuide()"></div>
+<aside class="guide-panel" id="guidePanel" aria-hidden="true">
+  <div class="guide-head">
+    <h2>How this calculator works</h2>
+    <button class="close" onclick="closeGuide()" aria-label="Close">&times;</button>
+  </div>
+  <div class="guide-body">
+    <span class="tag">The question</span>
+    <p>This tool answers one thing: <b>will the money you save last?</b> It works out your <b>Magic Number</b> — the corpus you need at retirement so your lifestyle is funded all the way to your plan-until age — and shows whether you're <b>on track</b> or facing a <b>gap</b>, live, as you move any control.</p>
+    <p>Everything runs in your own browser. Nothing you type ever leaves your device.</p>
+
+    <h3>One salary, many claims</h3>
+    <p>Each rupee you earn is pulled several ways at once — income tax, living expenses, loan EMIs, your children's goals, and retirement savings. <b>Savings is simply whatever is left</b> after the rest. So a bigger loan means less saved in those years, and correctly builds a <i>smaller</i> corpus — borrowing has an honest cost here.</p>
+
+    <h3>Income tax, computed live</h3>
+    <p>The tax row isn't editable — it applies the current New Regime slabs, the standard deduction, and the Section 87A rebate that makes income up to ₹12 lakh a year effectively tax-free. At ₹1 lakh a month your tax is near zero; it rises by slab as you earn more. Move the income slider and watch it recalculate.</p>
+
+    <h3>Loans in rupees — the affordability engine</h3>
+    <p>Set each loan in actual rupees. The tool sizes the EMI (compound / reducing-balance, as banks do) and keeps your total EMIs under a <b>tax-aware debt ceiling</b>: up to <b>40%</b> of salary while you earn ₹2 lakh a month or less, tightening to <b>30%</b> above that. Loan defaults scale with your income, and every slider starts at zero — so if you have no education loan, or bought your home outright, just leave it at zero.</p>
+    <p>Over the ceiling? The tool shows exactly what would fit, and the <b>Auto-fit</b> button snaps your loans to eligible amounts in one click — or you drag them yourself. Nothing changes without your click.</p>
+
+    <h3>Salary growth vs lifestyle growth — the secret</h3>
+    <p>Two separate sliders. <b>Salary growth</b> is how fast you earn. <b>Lifestyle growth</b> is how fast your spending rises — usually slower. <b>The gap between them is what builds your wealth:</b> a raise you don't fully spend becomes retirement savings.</p>
+    <div class="try">Try it: raise salary growth to 10% while lifestyle stays at 5%. Your funded % climbs — because earning more, without spending it all, genuinely gets you ahead.</div>
+    <p>Your retirement need is anchored to your slower-growing <b>lifestyle</b>, not your full last-drawn salary — because a disciplined earner never consumed all of it.</p>
+
+    <h3>Children as goals, not loans</h3>
+    <p>Education and marriage have deadlines you know decades ahead. Saved for from the start, they cost a tiny fraction of income each month — far less than borrowing late.</p>
+
+    <h3>After retirement — buckets and tax</h3>
+    <p>The corpus splits into three buckets that always total 100%: an <b>Annuity</b> (principal locked, pays income for life, returned in full to your nominee on death), <b>FD/Liquid</b>, and <b>Equity/MF</b>. Drag any share and FD absorbs the change; annuity stays put. Each year is funded from FD, refilled from equity to keep a cash cushion.</p>
+    <div class="note">Tax in retirement is charged only on <b>income</b> — annuity payout, FD interest, and realised equity gains — <b>never on the principal you draw back</b>, since that's your own money returning.</div>
+
+    <h3>The honesty test — Monte Carlo</h3>
+    <p>Flat averages flatter. The tool runs your whole life <b>1,000 times</b> with real market ups and downs and reports how many survive to your plan-until age. A plan that looks well-funded on paper can be a coin-flip in practice — that gap is the lesson.</p>
+
+    <h3>A few honest limits</h3>
+    <p>This is an educational what-if illustration, not investment advice — please consult a financial advisor for decisions. The tool works in yearly steps and simplifies some real-world tax detail. Nothing here is a return guarantee.</p>
+
+    <p style="margin-top:20px;font-family:var(--mono);font-size:11px;color:var(--ink-soft)">Model &amp; concept: Suresh Tumu · AMFI-certified · TechnoFunda community · Built in partnership with Claude (Anthropic)</p>
+  </div>
+</aside>
 <div class="wrap">
 <div class="print-head" id="printHead"></div>
 <div id="sharedBanner"></div>
 <header>
   <div class="eyebrow" style="display:flex;justify-content:space-between;align-items:center;gap:10px">
     <span>Life Expense Pyramid · Accumulate → Retire → Fund Life</span>
-    <button class="resetbtn" onclick="resetDefaults()" title="Discard all your changes and return to the starting figures">↺ Reset to default figures</button><button class="pdfbtn" onclick="downloadPDF()">⬇ Download PDF report</button>
+    <button class="helpbtn" onclick="openGuide()" title="How this calculator works">📖 How it works</button><button class="resetbtn" onclick="resetDefaults()" title="Discard all your changes and return to the starting figures">↺ Reset to default figures</button><button class="pdfbtn" onclick="downloadPDF()">⬇ Download PDF report</button>
   </div>
   <h1>Retirement Corpus — The Magic Number</h1>
   <p>Every rupee of income at your starting age is split into expense and accumulation lots. Lots inflate with a flat index; accumulation compounds until retirement; the corpus then funds retirement expenses. Change any number — everything recalculates instantly.</p>
@@ -225,7 +293,12 @@ input[type=range]{min-height:26px;touch-action:pan-y}
       <div class="lever">
         <label>Salary growth, per year <b id="v_growth"></b></label>
         <input type="range" id="growth" min="2" max="15" step="0.5" value="6">
-        <label style="margin-top:2px"><span style="font-size:11px">Savings ride on salary; lifestyle at retirement is anchored to the last-drawn salary</span></label>
+        <label style="margin-top:2px"><span style="font-size:11px">Savings ride on salary growth (how fast you earn).</span></label>
+      </div>
+      <div class="lever">
+        <label><span>Lifestyle growth, per year</span><b id="v_lifeg"></b></label>
+        <input type="range" id="lifeg" min="0" max="15" step="0.5" value="5">
+        <label style="margin-top:2px"><span style="font-size:11px">How fast your <b>spending</b> rises as you earn more — usually <b>slower</b> than salary. The gap between the two is what builds your wealth: a raise you don't fully spend becomes retirement savings. Your retirement lifestyle is anchored to this slower-growing spending, not your full last-drawn salary — because a disciplined earner never consumed all of it.</span></label>
       </div>
       <div class="lever">
         <label>Healthcare inflation, per year <b id="v_medinf"></b></label>
@@ -264,11 +337,11 @@ input[type=range]{min-height:26px;touch-action:pan-y}
           <span class="grow" style="font-size:11px;color:var(--ink-soft)">spend from FD; refill it from equity each year</span>
           <input type="range" id="cashYears" class="rmini" min="0" max="7" step="1" value="3" title="Years of expenses kept liquid">
         </div>
-        <label style="margin-top:2px"><span style="font-size:11px">Annuity here is a <b>return-of-corpus</b> policy: the principal is locked, pays income for life at a fixed <b>6%</b>, and the full principal is returned to your nominee on death (that is the amount shown as returned to nominee). Each retirement year you spend from FD, then top it back up to the cash-cover level by selling equity.</span></label>
+        <label style="margin-top:2px"><span style="font-size:11px">Tax in retirement is charged only on income — annuity payout, FD interest, and realised equity gains (LTCG) — never on the principal you draw back. Annuity here is a <b>return-of-corpus</b> policy: the principal is locked, pays income for life at a fixed <b>6%</b>, and the full principal is returned to your nominee on death (that is the amount shown as returned to nominee). Each retirement year you spend from FD, then top it back up to the cash-cover level by selling equity.</span></label>
       </div>
       <div class="lever">
-        <label>Retirement expenses (of working-age level, cell O2) <b id="v_ratio"></b></label>
-        <input type="range" id="ratio" min="30" max="100" step="1" value="80">
+        <label>Retirement spending (% of your final lifestyle) <b id="v_ratio"></b></label>
+        <input type="range" id="ratio" min="30" max="120" step="1" value="100">
       </div>
       <div class="lever">
         <label>Retirement age <b id="v_retire"></b></label>
@@ -417,9 +490,9 @@ let savings = [
   {name:"Already Accumulated Corpus (lumpsum ₹)", amt:500000, from:25, kind:"lump", atStart:true},
   {name:"Base savings (from day one)", amt:15, from:25, atStart:true},
 ];
-let P = {income:100000, inf:6, infmode:"compound", growth:6, medinf:6, racc:10, vol:12,
+let P = {income:100000, inf:6, infmode:"compound", growth:6, lifeg:5, medinf:6, racc:10, vol:12,
          annPct:30, annRate:6, fdPct:50, fdRate:7, eqPct:20, eqRate:10, cashYears:3,
-         ratio:80, retire:60, endage:90, startAge:25};
+         ratio:100, retire:60, endage:90, startAge:25};
 let incomes = [];   // retirement income streams: {name, amt(abs ₹/mo at retirement), from, till, inflating, active, custom}
 
 // snapshot each row's default values so a removed row can be restored
@@ -584,7 +657,7 @@ function loadFromHash(){
     savings.length=0;  st.S.forEach(r=>savings.push(r));
     incomes.length=0;  (st.I||[]).forEach(r=>incomes.push(r));
     reattachDefs();
-    ["income","start","inf","growth","medinf","racc","vol","annPct","fdPct","fdRate","eqRate","cashYears","ratio","retire","endage"].forEach(id=>{
+    ["income","start","inf","growth","lifeg","medinf","racc","vol","annPct","fdPct","fdRate","eqRate","cashYears","ratio","retire","endage"].forEach(id=>{
       const el=document.getElementById(id); if(el && id in P) el.value=P[id];
       else if(el && id==="start") el.value=P.startAge;
     });
@@ -600,9 +673,13 @@ function loadFromHash(){
 }
 
 // ---------- engine ----------
-function mult(age){   // salary index — contributions & lifestyle ride on this
+function mult(age){   // salary index — contributions ride on this
   const y = age - P.startAge;
   return P.infmode==="simple" ? 1 + (P.growth/100)*y : Math.pow(1+P.growth/100, y);
+}
+function lifeMult(age){   // lifestyle index — retirement spending anchors to this (grows slower than salary)
+  const y = age - P.startAge;
+  return P.infmode==="simple" ? 1 + (P.lifeg/100)*y : Math.pow(1+P.lifeg/100, y);
 }
 function infGrow(age, rate){   // price index from retirement onward
   const y = Math.max(0, age - P.retire);
@@ -624,14 +701,31 @@ function allocTotal(){
   return t;
 }
 function norm(){ const t=allocTotal(); return t>100 ? 100/t : 1; }
-function retExpense(age){ // yearly: lifestyle anchored to last-drawn salary, then price inflation (healthcare separate)
+function lifestyleSpend(age){ // the actual lifestyle the corpus must fund each retirement year (pre-tax-gross-up)
   let gen=0, med=0;
   for(const e of expenses){
     if(e.active===false || !e.ret || age>=e.ret) continue;
     if(e.med) med += e.amt; else gen += e.amt;
   }
-  const base = 12 * mult(P.retire) * (P.ratio/100) * scale() * norm();
+  const base = 12 * lifeMult(P.retire) * (P.ratio/100) * scale() * norm();  // % of final LIFESTYLE (not salary)
   return gen*base*infGrow(age,P.inf) + med*base*infGrow(age,P.medinf);
+}
+// Post-retirement income tax: the retiree must withdraw enough to cover lifestyle AND the tax on that
+// withdrawal. Under the new regime senior citizens get the same slabs (no age benefit), so we reuse the
+// same FY2026-27 calculator. We gross-up: find gross G such that G - tax(G) = lifestyle need.
+// Retirement income tax is charged ONLY on the income the corpus throws off — never on principal.
+//  - annuity payout: taxable at new-regime slabs
+//  - FD interest earned that year: taxable at new-regime slabs
+//  - equity/MF gains realised when units are sold: LTCG at 12.5% above the 1.25L annual exemption
+// The principal you draw back (and any lumpsum) is your own money — not taxed.
+function retirementTax(annuityIncome, fdInterest, equityGainRealised){
+  const slabIncome = Math.max(0, annuityIncome + fdInterest);      // taxed at new-regime slabs
+  const slabTax = incomeTaxAnnual(slabIncome);
+  const ltcg = Math.max(0, equityGainRealised - 125000) * 0.125;   // 12.5% LTCG above 1.25L exemption
+  return slabTax + ltcg;
+}
+function retExpense(age){ // for the magic-number search: lifestyle need (the corpus funds tax from its own income, handled in walkBuckets)
+  return lifestyleSpend(age);
 }
 function netNeed(age, annIncome){   // what the corpus must actually fund this year
   return Math.max(0, retExpense(age) - annIncome - streamIncome(age));
@@ -645,18 +739,34 @@ function walkBuckets(C, wantTraj){   // deploy corpus into buckets at retirement
   const A = C*P.annPct/100;
   let d = C*P.fdPct/100;
   let e = Math.max(0, C - A - d);
-  const annIncome = A*(P.annRate/100);          // level payout, for life
+  const eqCostFrac = e>0 ? 1 : 0;               // track equity cost basis to tax only the GAIN on sale
+  let eqBasis = e;                              // remaining invested principal in equity (for LTCG calc)
+  const annIncome = A*(P.annRate/100);          // level annuity payout, for life (taxable)
   let dep=null; const traj=[];
   for(let age=P.retire; age<P.endage; age++){
-    if(age>P.retire){ d += lumpAt(age); }       // post-retirement windfalls land in FD bucket
-    let need = retExpense(age) - annIncome - streamIncome(age);
-    if(need<0){ d += -need; need=0; }           // surplus income parks in FD bucket
+    if(age>P.retire){ d += lumpAt(age); }
+    const fdInterest = d*(P.fdRate/100);        // this year's FD interest (taxable)
+    // draw for lifestyle + tax on this year's investment income
+    let lifestyle = lifestyleSpend(age) - annIncome - streamIncome(age);
+    let equitySoldGain = 0;
+    // first pass: tax on annuity + FD interest (equity gain added below if we sell equity)
+    let taxNow = retirementTax(annIncome, fdInterest, 0);
+    let need = lifestyle + taxNow;
+    if(need<0){ d += -need; need=0; }
     if(need<=d) d-=need;
     else { let rem=need-d; d=0;
-           if(rem<=e) e-=rem; else { e=0; if(dep===null) dep=age; } }
-    const tgt=cashTarget(age, annIncome);       // refill the cash bucket from equity
-    if(d<tgt){ const move=Math.min(tgt-d, e); d+=move; e-=move; }
-    d*=1+P.fdRate/100; e*=1+P.eqRate/100;
+           // selling equity: the gain portion is taxable at LTCG
+           const sellFrac = e>0 ? Math.min(1, rem/e) : 0;
+           const gain = Math.max(0, (e-eqBasis))*sellFrac;
+           equitySoldGain = gain;
+           if(rem<=e){ eqBasis*=(1-sellFrac); e-=rem; } else { e=0; eqBasis=0; if(dep===null) dep=age; }
+           // add LTCG on the equity we just sold, drawn from FD if possible next
+           const extraTax = Math.max(0, gain-125000)*0.125;
+           if(extraTax<=d) d-=extraTax; else { let r2=extraTax-d; d=0; if(r2<=e){ e-=r2; } else { e=0; if(dep===null) dep=age; } }
+    }
+    const tgt=cashTarget(age, annIncome);
+    if(d<tgt){ const move=Math.min(tgt-d, e); d+=move; e-=move; eqBasis+=move*0; }
+    d*=1+P.fdRate/100; e*=1+P.eqRate/100;       // FD & equity grow (equity basis stays, gain accrues)
     if(wantTraj) traj.push({age:age+1, v:Math.max(d+e,0), phase:"draw"});
   }
   return {left:d+e, dep, annPrincipal:A, traj};
@@ -1147,7 +1257,7 @@ function bind(id,key,fmtFn){
   const el=document.getElementById(id);
   el.addEventListener("input",()=>{P[key]=parseFloat(el.value); recalc();});
 }
-["inf","racc","ratio","growth","medinf","fdRate","eqRate","vol","cashYears"].forEach(id=>bind(id,id));
+["inf","racc","ratio","growth","lifeg","medinf","fdRate","eqRate","vol","cashYears"].forEach(id=>bind(id,id));
 document.getElementById("income").addEventListener("input",function(){
   P.income=parseFloat(this.value)||100000;
   rescaleLoanDefaults();          // new salary -> new appropriate loan sizes (10:50:5 ratio)
@@ -1210,6 +1320,7 @@ function showLevers(){
   document.getElementById("v_inf").textContent=P.inf+"%";
   document.getElementById("v_racc").textContent=P.racc+"%";
   document.getElementById("v_growth").textContent=P.growth+"%";
+  document.getElementById("v_lifeg").textContent=P.lifeg+"%";
   document.getElementById("v_vol").textContent="±"+P.vol+"%";
   document.getElementById("v_medinf").textContent=P.medinf+"%";
   bucketNormalize("ann");
@@ -1226,6 +1337,7 @@ function showLevers(){
 }
 function recalc(){
   P.income=parseFloat(document.getElementById("income").value)||100;
+  if(P.lifeg>P.growth){ P.lifeg=P.growth; const el=document.getElementById("lifeg"); if(el) el.value=P.lifeg; }
   if(P.retire<P.startAge){ P.retire=P.startAge; document.getElementById("retire").value=P.retire; }
   clampRows();
   syncAutoTranches();
@@ -1260,6 +1372,19 @@ function sendFeedback(){
   window.location.href=`mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
 }
 document.getElementById("fbAlt").textContent="or email directly: "+CONTACT_EMAIL+' · subject starting "Retirement Corpus App — "';
+function openGuide(){
+  document.getElementById("guideScrim").classList.add("open");
+  document.getElementById("guidePanel").classList.add("open");
+  document.getElementById("guidePanel").setAttribute("aria-hidden","false");
+  document.body.style.overflow="hidden";
+}
+function closeGuide(){
+  document.getElementById("guideScrim").classList.remove("open");
+  document.getElementById("guidePanel").classList.remove("open");
+  document.getElementById("guidePanel").setAttribute("aria-hidden","true");
+  document.body.style.overflow="";
+}
+document.addEventListener("keydown",function(e){ if(e.key==="Escape") closeGuide(); });
 function resetDefaults(){
   if(confirm("Reset everything to the starting figures? Your current changes will be discarded.")){
     // strip any share-link hash so the page reloads with clean defaults
