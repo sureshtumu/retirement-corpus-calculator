@@ -24,13 +24,18 @@ header p{color:var(--ink-soft);max-width:900px;margin-top:4px}
 .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--brass)}
 
 /* verdict strip */
-.verdict{display:grid;grid-template-columns:repeat(4,1fr) 190px;gap:12px;margin:18px 0 22px}
+.verdict{display:grid;grid-template-columns:1fr 1fr 1fr 170px;gap:10px;margin:18px 0 20px}
+.vcard.wide{grid-column:1/-1}
+.vcard.wide{border-top:3px solid var(--brass);display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding:9px 14px}
+.vcard.wide .lbl{flex:0 0 auto}
+.vcard.wide .retline{font-size:14px;color:var(--ink);flex:1 1 320px;min-width:280px;line-height:1.45}
+.vcard.wide .sub{margin-top:0;flex:0 0 auto}
 .vcard{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--brass);padding:12px 14px}
 .vcard .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-soft)}
-.vcard .num{font-family:var(--mono);font-size:24px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums}
+.vcard .num{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums}
 .vcard .sub{font-size:11.5px;color:var(--ink-soft);margin-top:2px}
 .stamp{display:flex;align-items:center;justify-content:center}
-.stamp .inner{transform:rotate(-6deg);border:3px solid;border-radius:6px;padding:10px 18px;font-family:var(--slab);font-weight:700;font-size:22px;letter-spacing:2px;text-transform:uppercase;text-align:center;line-height:1.15}
+.stamp .inner{transform:rotate(-6deg);border:3px solid;border-radius:6px;padding:7px 14px;font-family:var(--slab);font-weight:700;font-size:18px;letter-spacing:2px;text-transform:uppercase;text-align:center;line-height:1.1}
 .stamp.ok .inner{color:var(--green);border-color:var(--green);background:var(--green-soft)}
 .stamp.bad .inner{color:var(--red);border-color:var(--red);background:var(--red-soft)}
 
@@ -207,6 +212,19 @@ input[type=range]{min-height:26px;touch-action:pan-y}
 .guide-body ul{margin:8px 0;padding-left:20px}
 .guide-body li{margin:5px 0;font-size:13px;line-height:1.55}
 @media print{.helpbtn,.guide-scrim,.guide-panel{display:none !important}}
+.info{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;
+  border:1px solid var(--brass);color:var(--brass);font-family:var(--body);font-size:10px;font-style:italic;font-weight:700;
+  cursor:help;margin-left:5px;position:relative;vertical-align:middle;line-height:1;user-select:none}
+.info:hover,.info.tapped{background:var(--brass);color:#fff}
+.info .bub{visibility:hidden;opacity:0;position:absolute;left:50%;top:calc(100% + 8px);transform:translateX(-50%);
+  width:230px;max-width:70vw;background:var(--ink);color:#fff;font-size:11.5px;font-style:normal;font-weight:400;
+  line-height:1.45;text-align:left;padding:8px 11px;border-radius:5px;z-index:150;
+  box-shadow:0 6px 18px rgba(0,0,0,.28);transition:opacity .15s;pointer-events:none}
+.info .bub::after{content:"";position:absolute;bottom:100%;left:50%;transform:translateX(-50%);
+  border:6px solid transparent;border-bottom-color:var(--ink)}
+.info:hover .bub,.info.tapped .bub{visibility:visible;opacity:1}
+.info .bub b{color:#E4B75A}
+@media print{.info{display:none !important}}
 </style>
 </head>
 <body>
@@ -272,15 +290,15 @@ input[type=range]{min-height:26px;touch-action:pan-y}
     <div class="panel">
       <h2>Assumptions</h2>
       <div class="lever">
-        <label>Monthly income at starting age (₹) <b id="v_income"></b></label>
+        <label>Monthly income at starting age (₹) <b id="v_income"></b> <span class="info" tabindex="0">i<span class="bub">Your gross salary per month at your starting age. <b>Drives everything</b> — loan defaults, tax, and savings all scale from this. Raising it also raises your tax slab.</span></span></label>
         <input type="number" id="income" value="100000" min="1" step="100">
       </div>
       <div class="lever">
-        <label>Starting age <b id="v_start"></b></label>
+        <label>Starting age <b id="v_start"></b> <span class="info" tabindex="0">i<span class="bub">The age you begin. Earlier starts give compounding more years to work — a few years here moves the corpus a lot.</span></span></label>
         <input type="range" id="start" min="18" max="60" step="1" value="25">
       </div>
       <div class="lever">
-        <label>Inflation, per year <b id="v_inf"></b></label>
+        <label>Inflation, per year <b id="v_inf"></b> <span class="info" tabindex="0">i<span class="bub">General price inflation. Grows your retirement expenses every year, and is used to show the leftover in today’s money.</span></span></label>
         <input type="range" id="inf" min="2" max="10" step="0.5" value="6">
       </div>
       <div class="lever">
@@ -291,48 +309,48 @@ input[type=range]{min-height:26px;touch-action:pan-y}
         </div>
       </div>
       <div class="lever">
-        <label>Salary growth, per year <b id="v_growth"></b></label>
+        <label>Salary growth, per year <b id="v_growth"></b> <span class="info" tabindex="0">i<span class="bub">How fast your <b>earning</b> rises. Drives your savings during working years. Keep it <b>above</b> lifestyle growth — the gap is what builds wealth.</span></span></label>
         <input type="range" id="growth" min="2" max="15" step="0.5" value="6">
         <label style="margin-top:2px"><span style="font-size:11px">Savings ride on salary growth (how fast you earn).</span></label>
       </div>
       <div class="lever">
-        <label><span>Lifestyle growth, per year</span><b id="v_lifeg"></b></label>
+        <label><span>Lifestyle growth, per year</span><b id="v_lifeg"></b> <span class="info" tabindex="0">i<span class="bub">How fast your <b>spending</b> rises — usually slower than salary. Your retirement need is anchored to this, not your full salary. Cannot exceed salary growth.</span></span></label>
         <input type="range" id="lifeg" min="0" max="15" step="0.5" value="5">
         <label style="margin-top:2px"><span style="font-size:11px">How fast your <b>spending</b> rises as you earn more — usually <b>slower</b> than salary. The gap between the two is what builds your wealth: a raise you don't fully spend becomes retirement savings. Your retirement lifestyle is anchored to this slower-growing spending, not your full last-drawn salary — because a disciplined earner never consumed all of it.</span></label>
       </div>
       <div class="lever">
-        <label>Healthcare inflation, per year <b id="v_medinf"></b></label>
+        <label>Healthcare inflation, per year <b id="v_medinf"></b> <span class="info" tabindex="0">i<span class="bub">Medical costs rise faster than general prices (about 2× in India). Applied only to the Health Insurance expense in retirement.</span></span></label>
         <input type="range" id="medinf" min="4" max="14" step="0.5" value="6">
         <label style="margin-top:2px"><span style="font-size:11px">Applied to Health Insurance in retirement (India medical inflation ≈ 2× general)</span></label>
       </div>
       <div class="lever">
-        <label>Return on accumulation <b id="v_racc"></b></label>
+        <label>Return on accumulation <b id="v_racc"></b> <span class="info" tabindex="0">i<span class="bub">The annual return your savings earn while you are working, before retirement. A point up or down moves the corpus a lot over decades.</span></span></label>
         <input type="range" id="racc" min="4" max="18" step="0.5" value="10">
       </div>
       <div class="lever">
-        <label>Market volatility σ (Monte Carlo) <b id="v_vol"></b></label>
+        <label>Market volatility σ (Monte Carlo) <b id="v_vol"></b> <span class="info" tabindex="0">i<span class="bub">How much returns swing year to year in the 1,000 simulated lives. Higher σ means wider outcomes and a lower survival rate.</span></span></label>
         <input type="range" id="vol" min="5" max="25" step="1" value="12">
         <label style="margin-top:2px"><span style="font-size:11px">Yearly swing applied to accumulation &amp; equity-bucket returns in the 1,000 simulations</span></label>
       </div>
       <div class="lever" style="border:1px solid var(--line);padding:9px 10px;background:#fff">
         <label style="margin-bottom:6px"><b style="font-family:var(--slab);font-size:13px">After retirement — corpus buckets</b></label>
-        <label><span>Annuity — share <b id="v_annPct"></b></span><span>rate <b id="v_annRate"></b></span></label>
+        <label><span>Annuity — share <b id="v_annPct"></b></span> <span class="info" tabindex="0">i<span class="bub">Share put into a return-of-corpus annuity — <b>locked at 6%</b>, pays for life, principal returned to your nominee on death. Fixed; FD and Equity share the rest.</span></span><span>rate <b id="v_annRate"></b></span></label>
         <div class="brow">
           <input type="range" id="annPct" class="grow" min="0" max="60" step="5" value="30">
           <span class="rmini" style="font-family:var(--mono);font-size:11px;color:var(--ink-soft);text-align:center;padding-top:3px">6% locked 🔒</span>
         </div>
-        <label style="margin-top:6px"><span>FD / Liquid — share <b id="v_fdPct"></b></span><span>rate <b id="v_fdRate"></b></span></label>
+        <label style="margin-top:6px"><span>FD / Liquid — share <b id="v_fdPct"></b></span> <span class="info" tabindex="0">i<span class="bub">Safe, liquid share you spend from first each year. <b>Absorbs</b> any change when you drag Equity or Annuity, so the three always total 100%.</span></span><span>rate <b id="v_fdRate"></b></span></label>
         <div class="brow">
           <input type="range" id="fdPct" class="grow" min="0" max="100" step="5" value="50">
           <input type="range" id="fdRate" class="rmini" min="5.5" max="12" step="0.5" value="7" title="FD/Liquid rate 5.5–12%">
         </div>
-        <label style="margin-top:6px"><span>Equity / MF — share <b id="v_eqPct"></b></span><span>rate <b id="v_eqRate"></b></span></label>
+        <label style="margin-top:6px"><span>Equity / MF — share <b id="v_eqPct"></b></span> <span class="info" tabindex="0">i<span class="bub">Growth share that keeps compounding in retirement. Drag it and FD adjusts. More equity means higher expected return but lower Monte Carlo survival.</span></span><span>rate <b id="v_eqRate"></b></span></label>
         <div class="brow">
           <input type="range" id="eqPct" class="grow" min="0" max="70" step="5" value="20">
           <input type="range" id="eqRate" class="rmini" min="6" max="25" step="0.5" value="10" title="Equity/MF rate 6–25%">
         </div>
         <div class="cap" style="font-size:10.5px;color:var(--ink-soft);margin-top:2px">Move any share — FD/Liquid absorbs the change so the three always total 100%. Annuity stays put.</div>
-        <label style="margin-top:6px"><span>Cash cover held in FD <b id="v_cashYears"></b></span></label>
+        <label style="margin-top:6px"><span>Cash cover held in FD <b id="v_cashYears"></b></span> <span class="info" tabindex="0">i<span class="bub">Years of expenses kept ready in FD. Each year you spend from FD, then refill it by selling equity. Higher cover is safer but slightly raises the magic number.</span></span></label>
         <div class="brow">
           <span class="grow" style="font-size:11px;color:var(--ink-soft)">spend from FD; refill it from equity each year</span>
           <input type="range" id="cashYears" class="rmini" min="0" max="7" step="1" value="3" title="Years of expenses kept liquid">
@@ -340,15 +358,15 @@ input[type=range]{min-height:26px;touch-action:pan-y}
         <label style="margin-top:2px"><span style="font-size:11px">Tax in retirement is charged only on income — annuity payout, FD interest, and realised equity gains (LTCG) — never on the principal you draw back. Annuity here is a <b>return-of-corpus</b> policy: the principal is locked, pays income for life at a fixed <b>6%</b>, and the full principal is returned to your nominee on death (that is the amount shown as returned to nominee). Each retirement year you spend from FD, then top it back up to the cash-cover level by selling equity.</span></label>
       </div>
       <div class="lever">
-        <label>Retirement spending (% of your final lifestyle) <b id="v_ratio"></b></label>
+        <label>Retirement spending (% of your final lifestyle) <b id="v_ratio"></b> <span class="info" tabindex="0">i<span class="bub">What fraction of your final <b>lifestyle</b> (not salary) you keep spending after 60. 100% = live exactly as before; lower it if you expect to spend less.</span></span></label>
         <input type="range" id="ratio" min="30" max="120" step="1" value="100">
       </div>
       <div class="lever">
-        <label>Retirement age <b id="v_retire"></b></label>
+        <label>Retirement age <b id="v_retire"></b> <span class="info" tabindex="0">i<span class="bub">When you stop earning and start drawing the corpus. Later retirement means more years saving and fewer to fund — both help.</span></span></label>
         <input type="range" id="retire" min="45" max="70" step="1" value="60">
       </div>
       <div class="lever">
-        <label>Plan until age <b id="v_endage"></b></label>
+        <label>Plan until age <b id="v_endage"></b> <span class="info" tabindex="0">i<span class="bub">The age your money must last to. Planning longer raises the magic number. Choose conservatively — outliving the corpus is the real risk.</span></span></label>
         <input type="range" id="endage" min="75" max="105" step="1" value="90">
       </div>
     </div>
@@ -359,7 +377,7 @@ input[type=range]{min-height:26px;touch-action:pan-y}
 
   <div>
     <div class="panel" style="border-top:3px solid var(--brass)">
-      <h2><span class="section-tag" style="background:var(--brass)">Loans</span> &nbsp;Borrowings in rupees — the affordability engine</h2>
+      <h2 style="font-size:22px"><span class="section-tag" style="background:var(--brass)">Loans</span> &nbsp;Borrowings in rupees — the affordability engine</h2>
       <div class="cap" style="margin-bottom:10px">Slide each loan in rupees. The tool keeps your total EMIs under a tax-aware debt ceiling, step-ups the home loan while education runs, and channels freed EMIs into equity as loans close.</div>
       <div id="debtMeter" style="margin-bottom:12px"></div>
       <div id="loanRows"></div>
@@ -1131,18 +1149,22 @@ function addSaving(){ const r={name:"New tranche",amt:5,from:P.startAge,atStart:
 // ---------- verdict + allocation check ----------
 function renderVerdict(r){
   const gap=r.achieved-r.req, ok=gap>=0, fullyByIncome=r.req<1000;
-  const nom = r.annPrincipal>0 ? ` · plus ${fmt(r.annPrincipal)} annuity principal returned to nominee` : "";
-  // express the end-of-plan leftover in RETIREMENT-DAY money (discount nominal back to age 60 at price inflation)
   const yrsAfterRetire = P.endage - P.retire;
   const retireDayValue = r.leftover / Math.pow(1 + P.inf/100, yrsAfterRetire);
-  const todayNote = r.leftover>0 ? ` <span style="color:var(--ink-soft)">(≈ ${fmt(retireDayValue)} in retirement-day money)</span>` : "";
-  const dep = r.depleted ? `Depletes at age ${r.depleted}${r.annPrincipal>0||incomes.some(s=>s.active!==false)?" (annuity/pension income continues)":""}` : `Lasts to ${P.endage} with ${fmt(r.leftover)} still in FD/equity at the end${todayNote}${nom}`;
+  // prominent number style: bold + coloured, matching the top cards (green on track / red on gap)
+  const numCol = ok ? "var(--green)" : "var(--red)";
+  const big = v => `<b style="font-family:var(--mono);font-weight:700;color:${numCol}">${fmt(v)}</b>`;
+  const nom = r.annPrincipal>0 ? ` · plus ${big(r.annPrincipal)} annuity principal returned to nominee` : "";
+  const todayNote = r.leftover>0 ? ` <span style="color:var(--ink-soft)">(≈ ${big(retireDayValue)} in retirement-day money)</span>` : "";
+  const dep = r.depleted
+    ? `<span style="color:var(--red)">Depletes at age <b style="font-family:var(--mono);font-weight:700">${r.depleted}</b>${r.annPrincipal>0||incomes.some(s=>s.active!==false)?" (annuity/pension income continues)":""}</span>`
+    : `<span style="color:var(--ink)">Lasts to ${P.endage} with ${big(r.leftover)} still in FD/equity at the end${todayNote}${nom}</span>`;
   document.getElementById("verdict").innerHTML = `
     <div class="vcard"><div class="lbl">Corpus at ${P.retire} (accumulated)</div><div class="num" style="color:var(--green)">${fmt(r.achieved)}</div><div class="sub">${P.racc}% return · ${P.infmode} ${P.inf}% inflation</div></div>
     <div class="vcard"><div class="lbl">Magic number — required at ${P.retire}</div><div class="num" style="color:var(--red)">${fmt(r.req)}</div><div class="sub">funds ages ${P.retire}–${P.endage} at ${P.ratio}% expenses · ${retExpense(P.retire)>0?(r.req/retExpense(P.retire)).toFixed(1):"—"}× first-year expense</div></div>
     <div class="vcard"><div class="lbl">${ok?"Surplus":"Shortfall"}</div><div class="num" style="color:${ok?'var(--green)':'var(--red)'}">${fmt(Math.abs(gap))}</div><div class="sub">${fullyByIncome?"expenses fully covered by income streams":(r.achieved/Math.max(r.req,1)).toFixed(2)+"× of what is required"}</div></div>
-    <div class="vcard"><div class="lbl">If you retire with what you saved</div><div class="num" style="font-size:16px;padding-top:8px">${dep}</div><div class="sub">buckets: annuity ${P.annPct}% @${P.annRate}% · FD ${P.fdPct}% @${P.fdRate}% · equity ${P.eqPct}% @${P.eqRate}%</div></div>
-    <div class="stamp ${ok?'ok':'bad'}"><div class="inner">${ok?'ON&nbsp;TRACK':'GAP!'}</div></div>`;
+    <div class="stamp ${ok?'ok':'bad'}"><div class="inner">${ok?'ON&nbsp;TRACK':'GAP!'}</div></div>
+    <div class="vcard wide"><div class="lbl">If you retire with what you saved</div><div class="retline">${dep}</div><div class="sub">buckets: annuity ${P.annPct}% @${P.annRate}% · FD ${P.fdPct}% @${P.fdRate}% · equity ${P.eqPct}% @${P.eqRate}%</div></div>`;
   // allocation check at starting age (percent of income)
   const tot=allocTotal();
   const an=document.getElementById("allocNote");
@@ -1421,6 +1443,13 @@ function updateStickyBar(r){
 loadFromHash();
 renderTables(); recalc();
 window.addEventListener("hashchange",()=>{loadFromHash(); renderTables(); recalc();});
+
+// info tooltips: hover on desktop (CSS), tap-toggle on touch devices
+document.addEventListener("click", function(e){
+  const ic = e.target.closest(".info");
+  document.querySelectorAll(".info.tapped").forEach(x=>{ if(x!==ic) x.classList.remove("tapped"); });
+  if(ic){ e.stopPropagation(); ic.classList.toggle("tapped"); }
+});
 </script>
 <!-- VISITOR STATS (GoatCounter — page views only; user inputs are NEVER sent anywhere).
      Dashboard: https://sureshtumu.goatcounter.com -->
