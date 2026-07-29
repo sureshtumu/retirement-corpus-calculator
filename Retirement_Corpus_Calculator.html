@@ -483,8 +483,8 @@ let expenses = [
 // v2: loans are absolute rupees (not % rows). EMIs computed by amortization, expressed as % of
 // current-year salary, and enforced under a 30% total-debt ceiling by the affordability solver.
 let loans = [
-  {key:"selfed",  name:"Self Education Loan", amount:1000000, rate:11,  start:25, span:10, elastic:false, active:true, incMult:10},
-  {key:"home",    name:"Home Loan",           amount:5000000, rate:8.5, start:30, span:25, elastic:true,  maxSpan:30, active:true, stepUp:true, incMult:50},
+  {key:"selfed",  name:"Self Education Loan", amount:500000, rate:11,  start:25, span:10, elastic:false, active:true, incMult:5},
+  {key:"home",    name:"Home Loan",           amount:4000000, rate:8.5, start:30, span:25, elastic:true,  maxSpan:30, active:true, stepUp:true, incMult:40},
   {key:"vehicle", name:"Vehicle Loan",        amount:500000,  rate:10,  start:33, span:7,  elastic:true,  maxSpan:10, canDelay:true, active:true, incMult:5},
 ];
 // v2: Child Education & Marriage are savings GOALS funded from accumulation, not loans.
