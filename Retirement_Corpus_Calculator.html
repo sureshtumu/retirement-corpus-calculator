@@ -225,6 +225,9 @@ input[type=range]{min-height:26px;touch-action:pan-y}
 .info:hover .bub,.info.tapped .bub{visibility:visible;opacity:1}
 .info .bub b{color:#E4B75A}
 @media print{.info{display:none !important}}
+.videobtn{display:inline-block;border:1px solid var(--red);background:#fff;color:var(--red);font-family:var(--mono);font-size:12px;padding:7px 14px;cursor:pointer;white-space:nowrap;margin-right:8px;text-decoration:none;border-radius:0}
+.videobtn:hover{background:var(--red);color:#fff}
+@media print{.videobtn{display:none !important}}
 </style>
 </head>
 <body>
@@ -277,7 +280,7 @@ input[type=range]{min-height:26px;touch-action:pan-y}
 <header>
   <div class="eyebrow" style="display:flex;justify-content:space-between;align-items:center;gap:10px">
     <span>Life Expense Pyramid · Accumulate → Retire → Fund Life</span>
-    <button class="helpbtn" onclick="openGuide()" title="How this calculator works">📖 How it works</button><button class="resetbtn" onclick="resetDefaults()" title="Discard all your changes and return to the starting figures">↺ Reset to default figures</button><button class="pdfbtn" onclick="downloadPDF()">⬇ Download PDF report</button>
+    <button class="helpbtn" onclick="openGuide()" title="How this calculator works">📖 How it works</button><a class="videobtn" href="https://www.youtube.com/watch?v=Zngw1yFC1aI" target="_blank" rel="noopener" title="Watch the 5-minute walkthrough on YouTube">▶ Watch the video</a><button class="resetbtn" onclick="resetDefaults()" title="Discard all your changes and return to the starting figures">↺ Reset to default figures</button><button class="pdfbtn" onclick="downloadPDF()">⬇ Download PDF report</button>
   </div>
   <h1>Retirement Corpus — The Magic Number</h1>
   <p>Every rupee of income at your starting age is split into expense and accumulation lots. Lots inflate with a flat index; accumulation compounds until retirement; the corpus then funds retirement expenses. Change any number — everything recalculates instantly.</p>
